@@ -97,3 +97,7 @@ if __name__ == '__main__':
 
     query_result = query_bids_validity(sys.argv[1], fw)
     pd.write_csv(query_result, sys.argv[2])
+# to do:
+
+## parse argv
+## make interactive help
