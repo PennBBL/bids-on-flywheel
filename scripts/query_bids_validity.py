@@ -96,7 +96,7 @@ if __name__ == '__main__':
     assert fw
 
     query_result = query_bids_validity(sys.argv[1], fw)
-    query_result.to_csv(sys.argv[2], index = FALSE)
+    query_result.to_csv(sys.argv[2], index = False)
 # to do:
 
 ## parse argv
