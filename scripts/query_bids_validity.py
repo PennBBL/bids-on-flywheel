@@ -96,7 +96,7 @@ if __name__ == '__main__':
     assert fw
 
     query_result = query_bids_validity(sys.argv[1], fw)
-    pd.write_csv(query_result, sys.argv[2])
+    query_result.to_csv(sys.argv[2], index = FALSE)
 # to do:
 
 ## parse argv
