@@ -124,9 +124,9 @@ def get_unequal_cells(df1, df2):
         return(indices)
 
 
-def loop_on_unequal_cells(row_col_list, changed_df):
+def validate_on_unequal_cells(row_col_list, changed_df):
     '''
-    Loop over list of row-column pairs
+    Loop over list of row-column pairs and run the change checker on each
 
     Input:
         row_col_arr: array of the row indices and column indices
@@ -168,7 +168,7 @@ if __name__ == '__main__':
     # check for equality of each cell between the original and modified
     unequal = get_unequal_cells(df_original, df_modified)
     # if any unequal, assess the validity of the modification
-    res = loop_on_unequal_cells(unequal, df_modified)
+    res = validate_on_unequal_cells(unequal, df_modified)
 
     if len(ERROR_MESSAGES) is 0:
         print("Your changes are ready to be uploaded!")
