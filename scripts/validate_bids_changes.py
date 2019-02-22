@@ -104,13 +104,14 @@ def change_checker(user_input, column):
         raise Exception("Column {0} not recognised!".format(column))
 
 
-def get_unequal_cells(df1, df2):
+def get_unequal_cells(df1, df2, provenance=True):
     '''
     Compare two dataframes and return indeces where the values are not equal
 
     Input:
-        df1: a pandas dataframe
-        df2: a pandas dataframe
+        df1: original pandas dataframe
+        df2: modified pandas dataframe
+        provenance: boolean; write out a log of proposed changes
     Output:
         indices: list of lists--the row-column pairs of unequal cells
     '''
@@ -121,22 +122,39 @@ def get_unequal_cells(df1, df2):
         comparison_array = df1.fillna(0).values == df2.fillna(0).values
         indices = np.where(comparison_array == False)
         indices = np.dstack(indices)[0].tolist()
+
+        if provenance:
+
+            cols = ["original", "modified", "column"]
+            lst = []
+
+            for pair in indices:
+
+                original = df1.iloc[pair[0], pair[1]]
+                modified = df2.iloc[pair[0], pair[1]]
+                column = df1.columns[pair[1]]
+
+                lst.append([original, modified, column])
+
+            provenance_df = pd.DataFrame(lst, columns=cols)
+            provenance_df.to_csv("provenance.txt", index=False, na_rep="NA")
+
         return(indices)
 
 
-def validate_on_unequal_cells(row_col_list, changed_df):
+def validate_on_unequal_cells(indices_list, changed_df):
     '''
     Loop over list of row-column pairs and run the change checker on each
 
     Input:
-        row_col_arr: array of the row indices and column indices
+        indices_list: array of the row indices and column indices
         changed_df: the df to run the change checker on
     Output:
         valid: boolean on whether the df passed the change checker
     '''
 
     valid = []
-    for pair in row_col_list:
+    for pair in indices_list:
         valid.append(change_checker(
             changed_df.iloc[pair[0], pair[1]],
             changed_df.columns[pair[1]]
@@ -150,9 +168,9 @@ def validate_on_unequal_cells(row_col_list, changed_df):
             if valid[x] is False:
                 print("")
                 print("Row {}, Column {}, \"{}\"".format(
-                    row_col_list[x][0]+1,
-                    row_col_list[x][1]+1,
-                    changed_df.iloc[row_col_list[x][0], row_col_list[x][1]]
+                    indices_list[x][0]+1,
+                    indices_list[x][1]+1,
+                    changed_df.iloc[indices_list[x][0], indices_list[x][1]]
                     ))
                 print(ERROR_MESSAGES.pop(0))
         return False
@@ -170,5 +188,5 @@ if __name__ == '__main__':
     # if any unequal, assess the validity of the modification
     res = validate_on_unequal_cells(unequal, df_modified)
 
-    if len(ERROR_MESSAGES) is 0:
+    if len(ERROR_MESSAGES) is 0 and res is True:
         print("Your changes are ready to be uploaded!")
