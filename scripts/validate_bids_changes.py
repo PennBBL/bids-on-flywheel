@@ -56,7 +56,7 @@ def change_checker(user_input, column):
 
     string_fields = ['acquisition.label', 'project.label', 'error_message'
         'subject.label', 'filename', 'folder', 'template',
-        'intendedfor', 'mod', 'path', 'rec', 'run', 'task']
+        'intendedfor', 'mod', 'path', 'rec', 'task']
 
     # try boolean drop down option
     if column.lower() in drop_down_bool.keys():
@@ -176,6 +176,12 @@ def validate_on_unequal_cells(indices_list, changed_df):
         return False
 
 
+def upload_to_flywheel(modified_df, change_index):
+    '''
+    If the changes are valid, upload them to flywheel
+    '''
+
+    return
 if __name__ == '__main__':
 
     # original df
@@ -189,4 +195,4 @@ if __name__ == '__main__':
     res = validate_on_unequal_cells(unequal, df_modified)
 
     if len(ERROR_MESSAGES) is 0 and res is True:
-        print("Your changes are ready to be uploaded!")
+        print("Your changes are being uploaded!")
