@@ -186,7 +186,7 @@ def upload_to_flywheel(modified_df, change_index, client):
     i = 1
     for pair in change_index:
 
-        print("Adding change {} of {}".format(i, len(change_index)))
+        print("Uploading change {} of {}".format(i, len(change_index)))
         # get the acquisition id
         change = {}
         acquisition = modified_df.loc[pair[0], 'acquisition.id']
@@ -225,3 +225,6 @@ if __name__ == '__main__':
         print("Your changes are being uploaded...")
         upload_to_flywheel(df_modified, unequal, fw)
         print("Done!")
+    else:
+        print("Exiting...")
+        sys.exit(0)
