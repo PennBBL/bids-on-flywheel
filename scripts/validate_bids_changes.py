@@ -88,12 +88,23 @@ def change_checker(user_input, column):
 
     # try the filename separately
     elif column.lower() == 'filename':
-        expr = re.compile(
-            '^sub-(?P<subject_id>[a-zA-Z0-9]+)(_ses-(?P<session_id>[a-zA-Z0-9]+))?'
-            '(_task-(?P<task_id>[a-zA-Z0-9]+))?(_acq-(?P<acq_id>[a-zA-Z0-9]+))?'
-            '(_rec-(?P<rec_id>[a-zA-Z0-9]+))?(_run-(?P<run_id>[a-zA-Z0-9]+))?')
+        anat1 = re.compile(
+            '^sub-(?P<subject_id>[a-zA-Z0-9]+)(_ses-(?P<session_id>[a-zA-Z0-9]+))?(_acq-(?P<acquisition_label>[a-zA-Z0-9]+))?(_ce-(?P<contrastenhanced_id>[a-zA-Z0-9]+))?(_rec-(?P<reconstruction_id>[a-zA-Z0-9]+))?(_run-(?P<run_id>[a-zA-Z0-9]+))?(_(?P<modality>[a-zA-Z0-9]+))?((?P<suffix>\.nii(\.gz)?))$'
+            )
 
-        if bool(expr.match(str(user_input))):
+        anat2 = re.compile(
+            '^sub-(?P<subject_id>[a-zA-Z0-9]+)(_ses-(?P<session_id>[a-zA-Z0-9]+))?(_acq-(?P<acquisition_label>[a-zA-Z0-9]+))?(_ce-(?P<contrastenhanced_id>[a-zA-Z0-9]+))?(_rec-(?P<reconstruction_id>[a-zA-Z0-9]+))?(_run-(?P<run_id>[a-zA-Z0-9]+))?(_mod-(?P<modality>[a-zA-Z0-9]+))?(_(?P<suffix>[a-zA-Z0-9]+\.nii(\.gz)?))$'
+            )
+
+        func1 = re.compile(
+            '^sub-(?P<subject_id>[a-zA-Z0-9]+)(_ses-(?P<session_id>[a-zA-Z0-9]+))?(_task-(?P<task_label>[a-zA-Z0-9]+))?(_acq-(?P<acquisition_label>[a-zA-Z0-9]+))?(_ce-(?P<contrastenhanced_id>[a-zA-Z0-9]+))?(_dir-(?P<direction>[a-zA-Z0-9]+))?(_rec-(?P<reconstruction_id>[a-zA-Z0-9]+))?(_run-(?P<run_id>[a-zA-Z0-9]+))?(_echo-(?P<echo_id>[a-zA-Z0-9]+))?(_(?P<contrast_label>[a-zA-Z0-9]+))?((?P<suffix>\.nii(\.gz)?))$'
+        )
+
+        if bool(anat1.match(str(user_input))):
+            return True
+        elif bool(anat2.match(str(user_input))):
+            return True
+        elif bool(func1.match(str(user_input))):
             return True
         else:
             ERROR_MESSAGES.append("This field MUST be a BIDS compliant name!")
@@ -184,11 +195,13 @@ def upload_to_flywheel(modified_df, change_index, client):
     '''
     If the changes are valid, upload them to flywheel
     '''
-
+    modified_df = df_modified
     # loop through each of the row_col indexes of changes
     i = 1
+    change_index = unequal
+    client = fw
     for pair in change_index:
-
+        pair
         print("Uploading change {} of {}".format(i, len(change_index)))
         # get the acquisition id
         change = {}
@@ -219,7 +232,7 @@ if __name__ == '__main__':
     #df_original = read_flywheel_csv("data/reward_audit.csv")
     # edited df
     df_modified = read_flywheel_csv(sys.argv[2])
-    #df_modified = read_flywheel_csv("data/reward_audit_invalid.csv")
+    #df_modified = read_flywheel_csv("data/reward_audit_valid.csv")
 
     # check for equality of each cell between the original and modified
     unequal = get_unequal_cells(df_original, df_modified)
