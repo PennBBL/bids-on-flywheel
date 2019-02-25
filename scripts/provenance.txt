@@ -1,0 +1,7 @@
+original,modified,row,column
+sub-16492_ses-fndm1_task-{file.info.BIDS.Task}_sbref.nii.gz,sub-16492_ses-fndm1_task-itc_run-3_sbref.nii.gz,1537,Filename
+False,TRUE,1538,valid
+False,TRUE,1540,valid
+sub-16492_ses-fndm1_task-{file.info.BIDS.Task}_sbref.nii.gz,sub-16492_ses-fndm1_task-itc_run-1_sbref.nii.gz,1540,Filename
+NA,ITC,1540,Task
+Task u'' does not match '^[a-zA-Z0-9]+$',NA,1540,error_message
