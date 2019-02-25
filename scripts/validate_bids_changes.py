@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 import re
 import flywheel
+import math
 
 
 ERROR_MESSAGES = []
@@ -56,7 +57,7 @@ def change_checker(user_input, column):
         }
 
     string_fields = ['acquisition.label', 'project.label', 'error_message',
-        'subject.label', 'filename', 'folder', 'template',
+        'subject.label', 'folder', 'template',
         'intendedfor', 'mod', 'path', 'rec', 'task']
 
     # try boolean drop down option
@@ -78,20 +79,21 @@ def change_checker(user_input, column):
         return False
 
     # try generic string
-elif column.lower() in string_fields:
-        if type(user_input) is str:
+    elif column.lower() in string_fields:
+        if type(user_input) is str or math.isnan(user_input):
             return True
         else:
             ERROR_MESSAGES.append("This field only accepts strings!")
             return False
 
-    # try the session.label separately
-    elif column == 'session.label':
+    # try the filename separately
+    elif column.lower() == 'filename':
         expr = re.compile(
             '^sub-(?P<subject_id>[a-zA-Z0-9]+)(_ses-(?P<session_id>[a-zA-Z0-9]+))?'
             '(_task-(?P<task_id>[a-zA-Z0-9]+))?(_acq-(?P<acq_id>[a-zA-Z0-9]+))?'
             '(_rec-(?P<rec_id>[a-zA-Z0-9]+))?(_run-(?P<run_id>[a-zA-Z0-9]+))?')
-        if bool(expr.match(str(user_input).lower())):
+
+        if bool(expr.match(str(user_input))):
             return True
         else:
             ERROR_MESSAGES.append("This field MUST be a BIDS compliant name!")
@@ -214,8 +216,10 @@ if __name__ == '__main__':
 
     # original df
     df_original = read_flywheel_csv(sys.argv[1])
+    #df_original = read_flywheel_csv("data/reward_audit.csv")
     # edited df
     df_modified = read_flywheel_csv(sys.argv[2])
+    #df_modified = read_flywheel_csv("data/reward_audit_invalid.csv")
 
     # check for equality of each cell between the original and modified
     unequal = get_unequal_cells(df_original, df_modified)
