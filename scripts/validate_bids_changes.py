@@ -1,9 +1,11 @@
 import sys
+import os
 import pandas as pd
 import numpy as np
 import re
 import flywheel
 import math
+import datetime
 
 
 ERROR_MESSAGES = []
@@ -152,7 +154,9 @@ def get_unequal_cells(df1, df2, provenance=True):
                 lst.append([original, modified, row, column])
 
             provenance_df = pd.DataFrame(lst, columns=cols)
-            provenance_df.to_csv("provenance.txt", index=False, na_rep="NA")
+            currentDT = datetime.datetime.now()
+            fname = "provenance_{}.txt".format(currentDT.strftime("%Y-%m-%d_%H:%M:%S"))
+            provenance_df.to_csv(fname, index=False, na_rep="NA")
 
         return(indices)
 
