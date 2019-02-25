@@ -128,7 +128,7 @@ def get_unequal_cells(df1, df2, provenance=True):
 
         if provenance:
 
-            cols = ["original", "modified", "column"]
+            cols = ["original", "modified", "row", "column"]
             lst = []
 
             for pair in indices:
