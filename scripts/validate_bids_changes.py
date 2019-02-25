@@ -55,7 +55,7 @@ def change_checker(user_input, column):
             'ecg', 'meg', 'nirs']
         }
 
-    string_fields = ['acquisition.label', 'project.label', 'error_message'
+    string_fields = ['acquisition.label', 'project.label', 'error_message',
         'subject.label', 'filename', 'folder', 'template',
         'intendedfor', 'mod', 'path', 'rec', 'task']
 
@@ -78,7 +78,7 @@ def change_checker(user_input, column):
         return False
 
     # try generic string
-    elif column.lower() in string_fields:
+elif column.lower() in string_fields:
         if type(user_input) is str:
             return True
         else:
@@ -134,8 +134,9 @@ def get_unequal_cells(df1, df2, provenance=True):
                 original = df1.iloc[pair[0], pair[1]]
                 modified = df2.iloc[pair[0], pair[1]]
                 column = df1.columns[pair[1]]
+                row = df1.index[pair[0]]
 
-                lst.append([original, modified, column])
+                lst.append([original, modified, row, column])
 
             provenance_df = pd.DataFrame(lst, columns=cols)
             provenance_df.to_csv("provenance.txt", index=False, na_rep="NA")
