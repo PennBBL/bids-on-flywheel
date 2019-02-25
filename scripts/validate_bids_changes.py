@@ -229,10 +229,8 @@ if __name__ == '__main__':
 
     # original df
     df_original = read_flywheel_csv(sys.argv[1])
-    #df_original = read_flywheel_csv("data/reward_audit.csv")
     # edited df
     df_modified = read_flywheel_csv(sys.argv[2])
-    #df_modified = read_flywheel_csv("data/reward_audit_valid.csv")
 
     # check for equality of each cell between the original and modified
     unequal = get_unequal_cells(df_original, df_modified)
