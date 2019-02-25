@@ -183,8 +183,10 @@ def upload_to_flywheel(modified_df, change_index, client):
     '''
 
     # loop through each of the row_col indexes of changes
+    i = 1
     for pair in change_index:
 
+        print("Adding change {} of {}".format(i, len(change_index)))
         # get the acquisition id
         change = {}
         acquisition = modified_df.loc[pair[0], 'acquisition.id']
@@ -201,7 +203,7 @@ def upload_to_flywheel(modified_df, change_index, client):
         # edit the BIDS info and update flywheel
         BIDS[change[acquisition][0]] = change[acquisition][1]
         nifti.update_info({'BIDS': BIDS})
-
+        i += 1
     return
 
 
