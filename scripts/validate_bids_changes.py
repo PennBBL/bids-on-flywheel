@@ -24,7 +24,7 @@ def read_flywheel_csv(fpath, required_cols=['acquisition.label',
         df: a pandas dataframe
     '''
 
-    df = pd.read_csv(fpath)
+    df = pd.read_csv(fpath, dtype={'valid':object})
 
     if set(required_cols) != set(df.columns):
         raise Exception(("It doesn't look like this csv is correctly formatted"
