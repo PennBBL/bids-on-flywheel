@@ -2,6 +2,7 @@ import sys
 import pandas as pd
 import numpy as np
 import re
+import flywheel
 
 
 ERROR_MESSAGES = []
@@ -176,13 +177,37 @@ def validate_on_unequal_cells(indices_list, changed_df):
         return False
 
 
-def upload_to_flywheel(modified_df, change_index):
+def upload_to_flywheel(modified_df, change_index, client):
     '''
     If the changes are valid, upload them to flywheel
     '''
 
+    # loop through each of the row_col indexes of changes
+    for pair in change_index:
+
+        # get the acquisition id
+        change = {}
+        acquisition = modified_df.loc[pair[0], 'acquisition.id']
+        change[acquisition] = (modified_df.columns[pair[1]], modified_df.iloc[pair[0], pair[1]])
+
+        # get the flywheel object of the acquisition
+        fw_object = client.get(str(acquisition))
+
+        # get the nifti file for the acquisition
+        nifti = [x for x in fw_object.files if x['type'] == 'nifti']
+        nifti = nifti[0]
+        BIDS = nifti['info']['BIDS']
+
+        # edit the BIDS info and update flywheel
+        BIDS[change[acquisition][0]] = change[acquisition][1]
+        nifti.update_info({'BIDS': BIDS})
+
     return
+
+
 if __name__ == '__main__':
+
+    fw = flywheel.Client()
 
     # original df
     df_original = read_flywheel_csv(sys.argv[1])
@@ -195,4 +220,6 @@ if __name__ == '__main__':
     res = validate_on_unequal_cells(unequal, df_modified)
 
     if len(ERROR_MESSAGES) is 0 and res is True:
-        print("Your changes are being uploaded!")
+        print("Your changes are being uploaded...")
+        upload_to_flywheel(df_modified, unequal, fw)
+        print("Done!")
