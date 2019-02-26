@@ -2,7 +2,7 @@ import flywheel
 import pandas as pd
 import sys
 import argparse
-import tqdm
+from tqdm import tqdm
 
 
 UNCLASSIFIED = 0
