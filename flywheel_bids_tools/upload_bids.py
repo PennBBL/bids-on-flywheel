@@ -235,10 +235,21 @@ if __name__ == '__main__':
 
     fw = flywheel.Client()
 
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "original",
+        help="Path to the original flywheel query CSV"
+    )
+    parser.add_argument(
+        "modified",
+        help="Path to the modified flywheel query CSV"
+    )
+    args = parser.parse_args()
+
     # original df
-    df_original = read_flywheel_csv(sys.argv[1])
+    df_original = read_flywheel_csv(args.original)
     # edited df
-    df_modified = read_flywheel_csv(sys.argv[2])
+    df_modified = read_flywheel_csv(args.modified)
 
     # check for equality of each cell between the original and modified
     unequal = get_unequal_cells(df_original, df_modified)
@@ -249,6 +260,7 @@ if __name__ == '__main__':
         print("Your changes are being uploaded...")
         upload_to_flywheel(df_modified, unequal, fw)
         print("Done!")
+        sys.exit(0)
     else:
         print("Exiting...")
         sys.exit(0)

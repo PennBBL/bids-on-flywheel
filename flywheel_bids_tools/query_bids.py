@@ -1,11 +1,12 @@
 import flywheel
 import pandas as pd
 import sys
+import argparse
 
 
 UNCLASSIFIED = 0
 NO_DATA = 0
-
+VERBOSE = True
 
 def query_fw(project, client):
     """Query the flywheel client for a project name
@@ -31,7 +32,7 @@ def query_fw(project, client):
         sys.exit(0)
 
 
-def extract_bids_data(acquisitionID, client, verbose=True):
+def extract_bids_data(acquisitionID, client):
     '''
     A helper function to dig into the file.info container
     (a dictionary of dictionaries) and extract the BIDS validity fields
@@ -40,7 +41,6 @@ def extract_bids_data(acquisitionID, client, verbose=True):
     -------
         acquisitionID: (string) the mongoDB hash key to identify the object
         client: (object) the flywheel Client class object
-        verbose: (bool) print progress messages
 
     Outputs:
     --------
@@ -75,7 +75,7 @@ def extract_bids_data(acquisitionID, client, verbose=True):
         return(df)
 
 
-def query_bids_validity(project, client, verbose=True):
+def query_bids_validity(project, client, VERBOSE=True):
     """
     Main wrapper function for querying, processing, and extracting BIDS
     information for a project
@@ -91,11 +91,11 @@ def query_bids_validity(project, client, verbose=True):
         merged_data: (DataFrame) a dataframe of the result of the query and processing
     """
     # first, log in to flywheel
-    if verbose:
+    if VERBOSE:
         print("Connecting to flywheel server...")
     assert client
     # query flywheel for the argument
-    if verbose:
+    if VERBOSE:
         print("Querying server...")
     result = query_fw(project, client)
 
@@ -104,7 +104,7 @@ def query_bids_validity(project, client, verbose=True):
     subject_df = client.read_view_dataframe(view, result.id)
 
     # loop through the subjects to extract acquisitions
-    if verbose:
+    if VERBOSE:
         print("Processing acquisitions...")
     sessions = []
     view = client.View(columns='acquisition')
@@ -116,16 +116,16 @@ def query_bids_validity(project, client, verbose=True):
     acquisitions = pd.concat(sessions)
     # loop through the acquisitions to extract the bids validity data
     # note: speed bottleneck here
-    if verbose:
+    if VERBOSE:
         print("Extracting BIDS information...")
     bids_classifications = []
     for ind, row in acquisitions.iterrows():
-        temp_info = extract_bids_data(row["acquisition.id"], client, verbose)
+        temp_info = extract_bids_data(row["acquisition.id"], client, VERBOSE)
         if temp_info is not None:
             bids_classifications.extend(temp_info)
     bids_classifications = pd.DataFrame(bids_classifications)
     # finally, join the bids classification with the acquisitions
-    if verbose:
+    if VERBOSE:
         print("Tidying and returning the results...")
     merged_data = pd.merge(acquisitions, bids_classifications, how='outer')
     merged_data['valid'][merged_data['valid'].isnull()] = False
@@ -135,7 +135,7 @@ def query_bids_validity(project, client, verbose=True):
     'IntendedFor', 'Mod', 'Modality', 'Path', 'Rec', 'Run', 'Task',
     'error_message', 'ignore', 'template']]
 
-    if verbose:
+    if VERBOSE:
         print("{} acquisitions could not be processed.".format(NO_DATA))
         print("{} nifti's are still unclassified.".format(UNCLASSIFIED))
     return(merged_data)
@@ -144,10 +144,26 @@ def query_bids_validity(project, client, verbose=True):
 if __name__ == '__main__':
 
     fw = flywheel.Client()
-    assert fw
+    assert fw, "Your Flywheel CLI credentials arent' set!"
 
-    query_result = query_bids_validity(sys.argv[1], fw)
-    query_result = query_bids_validity("Reward2018", fw)
-    query_result.to_csv(sys.argv[2], index = False)
-# to do:
-## make interactive help
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "project",
+        help="The project in flywheel to search for"
+    )
+    parser.add_argument(
+        "output",
+        help="The path and name of the output CSV of the query"
+    )
+
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        help="Print out progress messages and information",
+        default=True
+    )
+
+    args = parser.parse_args()
+    VERBOSE = args.verbose
+    query_result = query_bids_validity(args.project, fw)
+    query_result.to_csv(args.output, index = False)

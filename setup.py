@@ -20,8 +20,8 @@ setuptools.setup(
     ],
     entry_points = {
         'console_scripts': [
-            'query-bids=flywheel_bids_tools.query_bids.command_line:main',
-            'upload-bids=flywheel_bids_tools.upload_bids.command_line:main'
+            'query-bids=flywheel_bids_tools.query_bids:main',
+            'upload-bids=flywheel_bids_tools.upload_bids:main'
         ],
     }
 )
