@@ -141,7 +141,7 @@ def query_bids_validity(project, client, VERBOSE=True):
     return(merged_data)
 
 
-if __name__ == '__main__':
+def main():
 
     fw = flywheel.Client()
     assert fw, "Your Flywheel CLI credentials arent' set!"
@@ -164,6 +164,11 @@ if __name__ == '__main__':
     )
 
     args = parser.parse_args()
+    global VERBOSE
     VERBOSE = args.verbose
     query_result = query_bids_validity(args.project, fw)
-    query_result.to_csv(args.output, index = False)
+    query_result.to_csv(args.output, index=False)
+
+
+if __name__ == '__main__':
+    main()

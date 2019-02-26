@@ -6,6 +6,7 @@ import re
 import flywheel
 import math
 import datetime
+import argparse
 
 
 ERROR_MESSAGES = []
@@ -203,11 +204,9 @@ def upload_to_flywheel(modified_df, change_index, client):
     '''
     If the changes are valid, upload them to flywheel
     '''
-    modified_df = df_modified
+
     # loop through each of the row_col indexes of changes
     i = 1
-    change_index = unequal
-    client = fw
     for pair in change_index:
         pair
         print("Uploading change {} of {}".format(i, len(change_index)))
@@ -231,7 +230,7 @@ def upload_to_flywheel(modified_df, change_index, client):
     return
 
 
-if __name__ == '__main__':
+def main():
 
     fw = flywheel.Client()
 
@@ -264,3 +263,7 @@ if __name__ == '__main__':
     else:
         print("Exiting...")
         sys.exit(0)
+
+
+if __name__ == '__main__':
+    main()
