@@ -1,4 +1,0 @@
-original,modified,column
-False,True,valid
-sub-19830_ses-neff2_task-{file.info.BIDS.Task}_sbref.nii.gz,sub-19830_ses-neff2_task-effort_run-2_sbref.nii.gz,Filename
-NA,Effort2,Task
