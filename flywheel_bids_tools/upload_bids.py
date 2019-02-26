@@ -258,7 +258,7 @@ def main():
     res = validate_on_unequal_cells(unequal, df_modified)
 
     if len(ERROR_MESSAGES) is 0 and res is True:
-        print("Your changes are being uploaded...")
+        print("Changes appear to be valid! Uploading...")
         upload_to_flywheel(df_modified, unequal, fw)
         print("Done!")
         sys.exit(0)

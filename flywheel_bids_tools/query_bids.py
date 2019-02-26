@@ -137,7 +137,7 @@ def query_bids_validity(project, client, VERBOSE=True):
     if VERBOSE:
         print("Tidying and returning the results...")
     merged_data = pd.merge(acquisitions, bids_classifications, how='outer')
-    merged_data['valid'][merged_data['valid'].isnull()] = False
+    merged_data.loc[merged_data['valid'].isnull(), 'valid'] = False
     # pull relevant columns
     merged_data = merged_data[['acquisition.label', 'valid', 'acquisition.id',
     'project.label', 'session.label', 'subject.label', 'Filename', 'Folder',
