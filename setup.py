@@ -18,4 +18,10 @@ setuptools.setup(
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
     ],
+    entry_points = {
+        'console_scripts': [
+            'query-bids=flywheel_bids_tools.query_bids.command_line:main',
+            'upload-bids=flywheel_bids_tools.upload_bids.command_line:main'
+        ],
+    }
 )
