@@ -2,6 +2,7 @@ import flywheel
 import pandas as pd
 import sys
 import argparse
+import tqdm
 
 
 UNCLASSIFIED = 0
@@ -108,22 +109,30 @@ def query_bids_validity(project, client, VERBOSE=True):
         print("Processing acquisitions...")
     sessions = []
     view = client.View(columns='acquisition')
+    pbar = tqdm(total=100)
     for ind, row in subject_df.iterrows():
         session = client.read_view_dataframe(view, row["subject.id"])
         if(session.shape[0] > 0):
             sessions.append(session)
+        pbar.update(10)
+    pbar.close()
 
     acquisitions = pd.concat(sessions)
+
     # loop through the acquisitions to extract the bids validity data
     # note: speed bottleneck here
     if VERBOSE:
         print("Extracting BIDS information...")
     bids_classifications = []
+    pbar = tqdm(total=100)
     for ind, row in acquisitions.iterrows():
         temp_info = extract_bids_data(row["acquisition.id"], client, VERBOSE)
         if temp_info is not None:
             bids_classifications.extend(temp_info)
+        pbar.update(10)
+    pbar.close()
     bids_classifications = pd.DataFrame(bids_classifications)
+
     # finally, join the bids classification with the acquisitions
     if VERBOSE:
         print("Tidying and returning the results...")
