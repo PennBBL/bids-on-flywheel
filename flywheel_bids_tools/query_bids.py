@@ -3,6 +3,10 @@ import pandas as pd
 import sys
 
 
+UNCLASSIFIED = 0
+NO_DATA = 0
+
+
 def query_fw(project, client):
     """Query the flywheel client for a project name
 
@@ -46,12 +50,14 @@ def extract_bids_data(acquisitionID, client, verbose=True):
     try:
         acq = client.get(acquisitionID)
     except:
-        if verbose: print("There may not be any data for this acquisition!")
+        global NO_DATA
+        NO_DATA += 1
         return None
     niftis = [x for x in acq.files if x['type'] == 'nifti']
     # if there are no niftis, return
     if (len(niftis) < 1):
-        if verbose: print("No BIDs classification for this acquisition yet")
+        global UNCLASSIFIED
+        UNCLASSIFIED += 1
         return None
     else:
         df = []
@@ -85,10 +91,12 @@ def query_bids_validity(project, client, verbose=True):
         merged_data: (DataFrame) a dataframe of the result of the query and processing
     """
     # first, log in to flywheel
-    print("Connecting to flywheel server...")
+    if verbose:
+        print("Connecting to flywheel server...")
     assert client
     # query flywheel for the argument
-    print("Querying server...")
+    if verbose:
+        print("Querying server...")
     result = query_fw(project, client)
 
     # get the subjects for this project
@@ -96,7 +104,8 @@ def query_bids_validity(project, client, verbose=True):
     subject_df = client.read_view_dataframe(view, result.id)
 
     # loop through the subjects to extract acquisitions
-    print("Processing acquisitions...")
+    if verbose:
+        print("Processing acquisitions...")
     sessions = []
     view = client.View(columns='acquisition')
     for ind, row in subject_df.iterrows():
@@ -107,7 +116,8 @@ def query_bids_validity(project, client, verbose=True):
     acquisitions = pd.concat(sessions)
     # loop through the acquisitions to extract the bids validity data
     # note: speed bottleneck here
-    print("Extracting BIDS information...")
+    if verbose:
+        print("Extracting BIDS information...")
     bids_classifications = []
     for ind, row in acquisitions.iterrows():
         temp_info = extract_bids_data(row["acquisition.id"], client, verbose)
@@ -115,7 +125,8 @@ def query_bids_validity(project, client, verbose=True):
             bids_classifications.extend(temp_info)
     bids_classifications = pd.DataFrame(bids_classifications)
     # finally, join the bids classification with the acquisitions
-    print("Tidying and returning the results...")
+    if verbose:
+        print("Tidying and returning the results...")
     merged_data = pd.merge(acquisitions, bids_classifications, how='outer')
     merged_data['valid'][merged_data['valid'].isnull()] = False
     # pull relevant columns
@@ -124,6 +135,9 @@ def query_bids_validity(project, client, verbose=True):
     'IntendedFor', 'Mod', 'Modality', 'Path', 'Rec', 'Run', 'Task',
     'error_message', 'ignore', 'template']]
 
+    if verbose:
+        print("{} acquisitions could not be processed.".format(NO_DATA))
+        print("{} nifti's are still unclassified.".format(UNCLASSIFIED))
     return(merged_data)
 
 
@@ -133,6 +147,7 @@ if __name__ == '__main__':
     assert fw
 
     query_result = query_bids_validity(sys.argv[1], fw)
+    query_result = query_bids_validity("Reward2018", fw)
     query_result.to_csv(sys.argv[2], index = False)
 # to do:
 ## make interactive help
