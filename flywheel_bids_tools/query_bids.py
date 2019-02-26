@@ -4,19 +4,43 @@ import sys
 
 
 def query_fw(project, client):
-    # use the project name to query fw projects index
+    """Query the flywheel client for a project name
+
+    This function uses the flywheel API to find the first match of a project
+    name. The name must be exact so make sure to type it as is on the
+    website/GUI.
+
+    Inputs:
+    ---------
+        project: (string) the name of the project to search for
+        client: (object) the flywheel Client class object
+
+    Outputs:
+    ---------
+        project_object: (object) a flywheel project container object
+    """
     try:
         project_object = client.projects.find_first('label={0}'.format(project))
         return(project_object)
     except:
         print("Could not find a project in flywheel with that name!")
-        return None
+        sys.exit(0)
 
 
-def ExtractBidsValidity(acquisitionID, client, verbose=True):
+def extract_bids_data(acquisitionID, client, verbose=True):
     '''
-    A helper function to dig into the file.info object
-    (a dictionary of dictionaries) and extract the BIDS validity value
+    A helper function to dig into the file.info container
+    (a dictionary of dictionaries) and extract the BIDS validity fields
+
+    Inputs:
+    -------
+        acquisitionID: (string) the mongoDB hash key to identify the object
+        client: (object) the flywheel Client class object
+        verbose: (bool) print progress messages
+
+    Outputs:
+    --------
+        df: (DataFrame) a table of the bids fields and values
     '''
     # create the acquisition object and pull the niftis
     try:
@@ -46,7 +70,20 @@ def ExtractBidsValidity(acquisitionID, client, verbose=True):
 
 
 def query_bids_validity(project, client, verbose=True):
+    """
+    Main wrapper function for querying, processing, and extracting BIDS
+    information for a project
 
+    Inputs:
+    --------
+        project: (string) project to query for
+        client: (object) a flywheel project container object
+        verbose: (bool) print progress messages
+
+    Outputs:
+    --------
+        merged_data: (DataFrame) a dataframe of the result of the query and processing
+    """
     # first, log in to flywheel
     print("Connecting to flywheel server...")
     assert client
@@ -73,7 +110,7 @@ def query_bids_validity(project, client, verbose=True):
     print("Extracting BIDS information...")
     bids_classifications = []
     for ind, row in acquisitions.iterrows():
-        temp_info = ExtractBidsValidity(row["acquisition.id"], client, verbose)
+        temp_info = extract_bids_data(row["acquisition.id"], client, verbose)
         if temp_info is not None:
             bids_classifications.extend(temp_info)
     bids_classifications = pd.DataFrame(bids_classifications)
@@ -98,6 +135,4 @@ if __name__ == '__main__':
     query_result = query_bids_validity(sys.argv[1], fw)
     query_result.to_csv(sys.argv[2], index = False)
 # to do:
-
-## parse argv
 ## make interactive help

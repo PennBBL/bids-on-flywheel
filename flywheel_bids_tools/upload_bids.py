@@ -90,6 +90,7 @@ def change_checker(user_input, column):
 
     # try the filename separately
     elif column.lower() == 'filename':
+        # three different types of acceptable file names
         anat1 = re.compile(
             '^sub-(?P<subject_id>[a-zA-Z0-9]+)(_ses-(?P<session_id>[a-zA-Z0-9]+))?(_acq-(?P<acquisition_label>[a-zA-Z0-9]+))?(_ce-(?P<contrastenhanced_id>[a-zA-Z0-9]+))?(_rec-(?P<reconstruction_id>[a-zA-Z0-9]+))?(_run-(?P<run_id>[a-zA-Z0-9]+))?(_(?P<modality>[a-zA-Z0-9]+))?((?P<suffix>\.nii(\.gz)?))$'
             )
@@ -125,10 +126,13 @@ def get_unequal_cells(df1, df2, provenance=True):
     Compare two dataframes and return indeces where the values are not equal
 
     Input:
+    -------
         df1: original pandas dataframe
         df2: modified pandas dataframe
         provenance: boolean; write out a log of proposed changes
+
     Output:
+    --------
         indices: list of lists--the row-column pairs of unequal cells
     '''
 
