@@ -126,7 +126,7 @@ def query_bids_validity(project, client, VERBOSE=True):
     bids_classifications = []
     pbar = tqdm(total=100)
     for ind, row in acquisitions.iterrows():
-        temp_info = extract_bids_data(row["acquisition.id"], client, VERBOSE)
+        temp_info = extract_bids_data(row["acquisition.id"], client)
         if temp_info is not None:
             bids_classifications.extend(temp_info)
         pbar.update(10)
