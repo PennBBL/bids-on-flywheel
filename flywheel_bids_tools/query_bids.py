@@ -162,7 +162,7 @@ def query_bids_validity(project, client, VERBOSE=True):
 
     if VERBOSE:
         print("{} acquisitions could not be processed.".format(NO_DATA))
-        print("{} acquisitions were processed without niftis.".format(UNCLASSIFIED))
+        print("{} acquisitions do not have niftis.".format(UNCLASSIFIED))
     return(merged_data)
 
 
