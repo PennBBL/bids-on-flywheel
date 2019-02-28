@@ -74,7 +74,7 @@ def change_checker(user_input, column):
 
     # try drop down string option
     elif column.lower() in drop_down_single_fields.keys():
-        for field, options in drop_down_single_fields.iteritems():
+        for field, options in drop_down_single_fields.items():
             if str(user_input).lower() in options:
                 return True
             else:

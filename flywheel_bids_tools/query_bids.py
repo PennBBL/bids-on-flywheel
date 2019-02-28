@@ -9,6 +9,7 @@ UNCLASSIFIED = 0
 NO_DATA = 0
 VERBOSE = True
 
+
 def query_fw(project, client):
     """Query the flywheel client for a project name
 
@@ -16,14 +17,17 @@ def query_fw(project, client):
     name. The name must be exact so make sure to type it as is on the
     website/GUI.
 
-    Inputs:
+    Parameters
     ---------
-        project: (string) the name of the project to search for
-        client: (object) the flywheel Client class object
+    project
+        The name of the project to search for.
+    client
+        The flywheel Client class object.
 
-    Outputs:
+    Returns
     ---------
-        project_object: (object) a flywheel project container object
+    project_object
+        A flywheel project container object.
     """
     try:
         project_object = client.projects.find_first('label={0}'.format(project))
@@ -34,19 +38,23 @@ def query_fw(project, client):
 
 
 def extract_bids_data(acquisitionID, client):
-    '''
+    """Extract the BIDS data of an acquisition
+
     A helper function to dig into the file.info container
-    (a dictionary of dictionaries) and extract the BIDS validity fields
+    (a dictionary of dictionaries) and extract the BIDS validity fields.
 
-    Inputs:
+    Parameters
     -------
-        acquisitionID: (string) the mongoDB hash key to identify the object
-        client: (object) the flywheel Client class object
+    acquisitionID
+        The mongoDB hash key to identify the object.
+    client
+        The flywheel Client class object.
 
-    Outputs:
+    Returns
     --------
-        df: (DataFrame) a table of the bids fields and values
-    '''
+    df
+        A table of the bids fields and values.
+    """
     # create the acquisition object and pull the niftis
     try:
         acq = client.get(acquisitionID)
@@ -66,31 +74,38 @@ def extract_bids_data(acquisitionID, client):
         for nii in niftis:
             info = nii['info']
             if 'BIDS' in info.keys() and isinstance(info['BIDS'], dict):
-                # also add the acquisition idto the dict for joining purposes
+                # also add the acquisition id to the dict for joining purposes
                 nii['info']['BIDS']['acquisition.id'] = str(acquisitionID)
                 # pull out the bids info
                 df.append(nii['info']['BIDS'])
             else:
-                return None
+                nii['info']['BIDS'] = {"acquisition.id": acquisitionID}
+                df.append(nii['info']['BIDS'])
 
         return(df)
 
 
 def query_bids_validity(project, client, VERBOSE=True):
-    """
+    """Query Flywheel for BIDS data
+
     Main wrapper function for querying, processing, and extracting BIDS
     information for a project
 
-    Inputs:
+    Parameters
     --------
-        project: (string) project to query for
-        client: (object) a flywheel project container object
-        verbose: (bool) print progress messages
+    project
+        Project to query for
+    client
+        A flywheel project container object
+    verbose
+        Print progress messages
 
-    Outputs:
+    Returns
     --------
-        merged_data: (DataFrame) a dataframe of the result of the query and processing
+    merged_data
+        A dataframe of the result of the query and processing
     """
+
     # first, log in to flywheel
     if VERBOSE:
         print("Connecting to flywheel server...")
@@ -98,6 +113,7 @@ def query_bids_validity(project, client, VERBOSE=True):
     # query flywheel for the argument
     if VERBOSE:
         print("Querying server...")
+
     result = query_fw(project, client)
 
     # get the subjects for this project
@@ -146,7 +162,7 @@ def query_bids_validity(project, client, VERBOSE=True):
 
     if VERBOSE:
         print("{} acquisitions could not be processed.".format(NO_DATA))
-        print("{} nifti's are still unclassified.".format(UNCLASSIFIED))
+        print("{} acquisitions were processed without niftis.".format(UNCLASSIFIED))
     return(merged_data)
 
 
