@@ -245,12 +245,21 @@ def main():
         "modified",
         help="Path to the modified flywheel query CSV"
     )
+    parser.add_argument(
+        "grp", "--groupings",
+        nargs='+',
+        dest='list',
+        default=None
+    )
     args = parser.parse_args()
 
     # original df
     df_original = read_flywheel_csv(args.original)
     # edited df
     df_modified = read_flywheel_csv(args.modified)
+    if args.grp:
+        temp = df_original.copy()
+        df_modified = temp.update(df_modified)
 
     # check for equality of each cell between the original and modified
     unequal = get_unequal_cells(df_original, df_modified)

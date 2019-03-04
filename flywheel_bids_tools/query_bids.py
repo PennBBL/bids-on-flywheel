@@ -169,7 +169,7 @@ def query_bids_validity(project, client, VERBOSE=True):
 def main():
 
     fw = flywheel.Client()
-    assert fw, "Your Flywheel CLI credentials arent' set!"
+    assert fw, "Your Flywheel CLI credentials aren't set!"
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -180,18 +180,32 @@ def main():
         "output",
         help="The path and name of the output CSV of the query"
     )
-
     parser.add_argument(
         "-v",
         "--verbose",
         help="Print out progress messages and information",
         default=True
     )
+    parser.add_argument(
+        "-grp", "--groupings",
+        nargs='+',
+        dest='list',
+        help="Columns to group unique rows by",
+        default=None
+    )
+    parser.add_argument(
+        "-grouped_output",
+        help="The path and name of a grouped version of the output CSV of the query",
+        default=None
+    )
 
     args = parser.parse_args()
     global VERBOSE
     VERBOSE = args.verbose
     query_result = query_bids_validity(args.project, fw)
+    if args.grp:
+        grouped = query_result.drop_duplicates(args.grp).copy()
+        grouped.to_csv(args.grouped_output, index=False)
     query_result.to_csv(args.output, index=False)
 
 
