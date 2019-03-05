@@ -77,10 +77,23 @@ def extract_bids_data(acquisitionID, client):
                 # also add the acquisition id to the dict for joining purposes
                 nii['info']['BIDS']['acquisition.id'] = str(acquisitionID)
                 # pull out the bids info
-                df.append(nii['info']['BIDS'])
+                bids = nii['info']['BIDS']
+                # include TR and Series name
+                bids.update({'RepetitionTime': nii['info']['RepetitionTime']})
+                bids.update({'SeriesDescription': nii['info']['SeriesDescription']})
+                # include the classification
+                if 'classification' in nii.keys():
+                    bids.update(nii.classification)
+                df.append(bids)
+
             else:
                 nii['info']['BIDS'] = {"acquisition.id": acquisitionID}
-                df.append(nii['info']['BIDS'])
+                # pull out the bids info
+                bids = nii['info']['BIDS']
+                # include the classification
+                if 'classification' in nii.keys():
+                    bids.update(nii.classification)
+                df.append(bids)
 
         return(df)
 
@@ -158,7 +171,7 @@ def query_bids_validity(project, client, VERBOSE=True):
     merged_data = merged_data[['acquisition.label', 'valid', 'acquisition.id',
     'project.label', 'session.label', 'subject.label', 'Filename', 'Folder',
     'IntendedFor', 'Mod', 'Modality', 'Path', 'Rec', 'Run', 'Task',
-    'error_message', 'ignore', 'template']]
+    'error_message', 'ignore', 'template', 'Intent', 'Measurement']]
 
     if VERBOSE:
         print("{} acquisitions could not be processed.".format(NO_DATA))
@@ -173,39 +186,44 @@ def main():
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "project",
-        help="The project in flywheel to search for"
+        "-proj", "--project",
+        help="The project in flywheel to search for",
+        required=True,
+        dest="project"
     )
     parser.add_argument(
-        "output",
-        help="The path and name of the output CSV of the query"
+        "-out", "--output-file",
+        help="The path and name of the output CSV of the query",
+        required=True,
+        dest="output"
     )
     parser.add_argument(
-        "-v",
-        "--verbose",
+        "-v", "--verbose",
         help="Print out progress messages and information",
         default=True
     )
     parser.add_argument(
         "-grp", "--groupings",
         nargs='+',
-        dest='list',
+        dest='group',
         help="Columns to group unique rows by",
         default=None
     )
     parser.add_argument(
-        "-grouped_output",
+        "-grp-out", "--grouped-output",
         help="The path and name of a grouped version of the output CSV of the query",
-        default=None
+        default=None,
+        dest="group_output"
     )
 
     args = parser.parse_args()
     global VERBOSE
     VERBOSE = args.verbose
-    query_result = query_bids_validity(args.project, fw)
-    if args.grp:
-        grouped = query_result.drop_duplicates(args.grp).copy()
-        grouped.to_csv(args.grouped_output, index=False)
+    query_result =  query_bids_validity(args.project, fw)
+    if args.group:
+        grouped = query_result.copy()
+        grouped = grouped.drop_duplicates(args.group)
+        grouped.to_csv(args.group_output, index=False)
     query_result.to_csv(args.output, index=False)
 
 
