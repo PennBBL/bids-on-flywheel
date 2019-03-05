@@ -62,7 +62,7 @@ def change_checker(user_input, column):
 
     string_fields = ['acquisition.label', 'project.label', 'error_message',
         'subject.label', 'folder', 'template',
-        'intendedfor', 'mod', 'path', 'rec', 'task']
+        'intendedfor', 'mod', 'path', 'rec', 'task', 'run']
 
     # try boolean drop down option
     if column.lower() in drop_down_bool.keys():
