@@ -3,6 +3,9 @@ import pandas as pd
 import sys
 import argparse
 from tqdm import tqdm
+import re
+from pandas.io.json.normalize import nested_to_record
+import warnings
 
 
 UNCLASSIFIED = 0
@@ -98,6 +101,36 @@ def extract_bids_data(acquisitionID, client):
         return(df)
 
 
+def unlist_item(ls):
+    '''Convert a list item to a comma-separated string
+    '''
+    if type(ls) is list:
+        ls.sort()
+        return(', '.join(x for x in ls))
+    else:
+        return float('nan')
+
+
+def process_acquisition(acq_id, client):
+
+    acq = client.get(acq_id)
+    files = [x.to_dict() for x in acq.files]
+    flat_files = [nested_to_record(my_dict, sep='_') for my_dict in files]
+    cols = r'(classification)|(^type$)|(^modality$)|(BIDS)|(RepetitionTime)|(SequenceName)|(SeriesDescription)'
+    flat_files = [
+        {k: v for k, v in my_dict.items() if re.search(cols, k)}
+        for my_dict in flat_files
+        ]
+    for x in flat_files:
+        x.update({'acquisition.id': acq_id})
+    df = pd.DataFrame(flat_files)
+    if 'type' in df.columns:
+        df = df[df.type.str.contains(r'(nifti)|dicom')].reset_index(drop=True)
+    list_cols = (df.applymap(type) == list).all()
+    df.loc[:, list_cols] = df.loc[:, list_cols].applymap(unlist_item)
+    return df
+
+
 def query_bids_validity(project, client, VERBOSE=True):
     """Query Flywheel for BIDS data
 
@@ -138,56 +171,50 @@ def query_bids_validity(project, client, VERBOSE=True):
         print("Processing acquisitions...")
     sessions = []
     view = client.View(columns='acquisition')
-    pbar = tqdm(total=100)
-    for ind, row in subject_df.iterrows():
+    for ind, row in tqdm(subject_df.iterrows(), total=subject_df.shape[0]):
         session = client.read_view_dataframe(view, row["subject.id"])
         if(session.shape[0] > 0):
             sessions.append(session)
-        pbar.update(10)
-    pbar.close()
 
     acquisitions = pd.concat(sessions)
 
     # loop through the acquisitions to extract the bids validity data
     # note: speed bottleneck here
     if VERBOSE:
-        print("Extracting BIDS information...")
+        print("Extracting BIDS and MR Classifier information...")
     bids_classifications = []
-    pbar = tqdm(total=100)
-    for ind, row in acquisitions.iterrows():
-        temp_info = extract_bids_data(row["acquisition.id"], client)
-        if temp_info is not None:
-            bids_classifications.extend(temp_info)
-        pbar.update(10)
-    pbar.close()
-    bids_classifications = pd.DataFrame(bids_classifications)
+    for index, row in tqdm(acquisitions.iterrows(), total=acquisitions.shape[0]):
+        try:
+            temp = process_acquisition(row["acquisition.id"], client)
+            bids_classifications.append(temp)
+        except:
+            global UNCLASSIFIED
+            UNCLASSIFIED += 1
+            continue
+
+    bids_classifications = pd.concat(bids_classifications)
 
     # finally, join the bids classification with the acquisitions
     if VERBOSE:
         print("Tidying and returning the results...")
     merged_data = pd.merge(acquisitions, bids_classifications, how='outer')
-    merged_data.loc[merged_data['valid'].isnull(), 'valid'] = False
-    # pull relevant columns
-    merged_data = merged_data[['acquisition.label', 'valid', 'acquisition.id',
-    'project.label', 'session.label', 'subject.label', 'Filename', 'Folder',
-    'IntendedFor', 'Mod', 'Modality', 'Path', 'Rec', 'Run', 'Task',
-    'error_message', 'ignore', 'template', 'Intent', 'Measurement']]
-
     if VERBOSE:
-        print("{} acquisitions could not be processed.".format(NO_DATA))
-        print("{} acquisitions do not have niftis.".format(UNCLASSIFIED))
+        print("{} acquisitions could not be processed.".format(UNCLASSIFIED))
     return(merged_data)
 
 
 def main():
 
-    fw = flywheel.Client()
-    assert fw, "Your Flywheel CLI credentials aren't set!"
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        fw = flywheel.Client()
+        assert fw, "Your Flywheel CLI credentials aren't set!"
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "-proj", "--project",
         help="The project in flywheel to search for",
+        nargs="+",
         required=True,
         dest="project"
     )
@@ -202,29 +229,16 @@ def main():
         help="Print out progress messages and information",
         default=True
     )
-    parser.add_argument(
-        "-grp", "--groupings",
-        nargs='+',
-        dest='group',
-        help="Columns to group unique rows by",
-        default=None
-    )
-    parser.add_argument(
-        "-grp-out", "--grouped-output",
-        help="The path and name of a grouped version of the output CSV of the query",
-        default=None,
-        dest="group_output"
-    )
 
     args = parser.parse_args()
     global VERBOSE
     VERBOSE = args.verbose
-    query_result =  query_bids_validity(args.project, fw)
-    if args.group:
-        grouped = query_result.copy()
-        grouped = grouped.drop_duplicates(args.group)
-        grouped.to_csv(args.group_output, index=False)
-    query_result.to_csv(args.output, index=False)
+    project = ' '.join(args.project)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        query_result = query_bids_validity(project, fw)
+        query_result.to_csv(args.output, index=True)
+    print("Done!")
 
 
 if __name__ == '__main__':

@@ -21,7 +21,9 @@ setuptools.setup(
     entry_points = {
         'console_scripts': [
             'query-bids=flywheel_bids_tools.query_bids:main',
-            'upload-bids=flywheel_bids_tools.upload_bids:main'
+            'upload-bids=flywheel_bids_tools.upload_bids:main',
+            'group-query=flywheel_bids_tools.group_query:main',
+            'ungroup-query=flywheel_bids_tools.ungroup_query:main',
         ],
     }
 )
