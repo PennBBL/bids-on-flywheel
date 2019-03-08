@@ -1,6 +1,7 @@
 import pandas as pd
 import argparse
 from tqdm import tqdm
+from .query_bids import unlist_item
 
 
 def read_flywheel_csv(fpath, required_cols=['acquisition.label']):
@@ -47,13 +48,24 @@ def main():
     )
     args = parser.parse_args()
 
+    # read in the file
     query_result = read_flywheel_csv(args.infile)
-    grouped = query_result.copy()
-    grouped = grouped.drop_duplicates(args.group)
-    reorder = [x for x in args.group] + \
-        [x for x in grouped.columns if x not in args.group]
-    grouped = grouped[reorder]
-    grouped.to_csv(args.group_output, index=True)
+
+    # add a group index, group
+    query_result['group_id'] = (query_result
+        # groupby and keep the columns as columns
+        .groupby(args.group, as_index=False)
+        # index the groups
+        .ngroup()
+        .add(1))
+    query_result = (query_result
+        # groupby and sample 1 exemplar
+        .groupby(args.group, as_index=False)
+        .nth(1)
+        .reset_index(drop=True))
+    # add index for group indeces
+    query_result['groups'] = unlist_item(args.group)
+    query_result.to_csv(args.group_output, index=False)
     print("Done")
 
 

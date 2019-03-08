@@ -232,6 +232,10 @@ def upload_to_flywheel(modified_df, change_index, client):
     return
 
 
+def relist_item(string):
+    return([s.strip() for s in string.split(',')])
+
+
 def main():
 
     fw = flywheel.Client()

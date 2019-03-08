@@ -112,18 +112,39 @@ def unlist_item(ls):
 
 
 def process_acquisition(acq_id, client):
+    '''
+    Extract an acquisition
 
+    This function extracts an acquisition object and collects the important
+    file classification information. These data are processed and returned as
+    a pandas dataframe that can then be manipulated
+
+    '''
+
+    # get the acquisition object
     acq = client.get(acq_id)
+
+    # convert to dictionary, and flatten the dictionary to avoid nested dicts
     files = [x.to_dict() for x in acq.files]
     flat_files = [nested_to_record(my_dict, sep='_') for my_dict in files]
+
+    # define desirable columns in regex
     cols = r'(classification)|(^type$)|(^modality$)|(BIDS)|(RepetitionTime)|(SequenceName)|(SeriesDescription)'
+
+    # filter the dict keys for the columns names
     flat_files = [
         {k: v for k, v in my_dict.items() if re.search(cols, k)}
         for my_dict in flat_files
         ]
+
+    # add acquisition ID for reference
     for x in flat_files:
         x.update({'acquisition.id': acq_id})
+
+    # to data frame
     df = pd.DataFrame(flat_files)
+
+    # lastly, only pull niftis and dicoms; also convert list to string
     if 'type' in df.columns:
         df = df[df.type.str.contains(r'(nifti)|dicom')].reset_index(drop=True)
     list_cols = (df.applymap(type) == list).all()
@@ -237,7 +258,7 @@ def main():
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         query_result = query_bids_validity(project, fw)
-        query_result.to_csv(args.output, index=True)
+        query_result.to_csv(args.output, index=False)
     print("Done!")
 
 
