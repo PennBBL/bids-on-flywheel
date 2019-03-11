@@ -244,7 +244,7 @@ def main():
         dest="project"
     )
     parser.add_argument(
-        "-out", "--output-file",
+        "-output", "--output-file",
         help="The path and name of the output CSV of the query",
         required=True,
         dest="output"

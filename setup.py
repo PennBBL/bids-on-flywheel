@@ -5,10 +5,10 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="flywheel_bids_tools",
-    version="0.0.2",
+    version="0.0.3",
     author="Tinashe M. Tapera",
     author_email="tinashemtapera@gmail.com",
-    description="Tools for extracting, editing, and uploading BIDS information from and to Flywheel",
+    description="Tools for extracting, editing, and uploading BIDS data from and to Flywheel",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/PennBBL/bids-on-flywheel",

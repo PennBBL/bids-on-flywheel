@@ -28,21 +28,21 @@ def main():
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "-grouped", "--input-grouped",
+        "-grouped", "--grouped-input",
         dest='grouped',
-        help="The grouped Flywheel query file",
+        help="The original grouped Flywheel query file",
         required=True
     )
     parser.add_argument(
-        "-mod", "--input-modified",
-        help="The grouped query file that has been modified",
+        "-mod", "--modified-input",
+        help="The modified grouped query file",
         dest="modified",
         required=True
     )
     parser.add_argument(
-        "-orig", "--input-original",
+        "-orig", "--original-input",
         dest='original',
-        help="The original unmodified Flywheel query file",
+        help="The original ungrouped Flywheel query file",
         required=True
     )
     parser.add_argument(
@@ -88,6 +88,7 @@ def main():
     for group, change in changes.items():
         df_original.loc[df_original['group_id'] == group, change[0]] = change[1]
 
+    df_original.drop(columns='group_id', inplace=True)
     df_original.to_csv(args.output, index=False)
     print("Done")
 

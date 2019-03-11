@@ -34,13 +34,13 @@ def main():
         required=True
     )
     parser.add_argument(
-        "-grp-out", "--grouped-output",
+        "-output", "--grouped-output",
         help="The path and name of a grouped version of the output CSV of the query",
         dest="group_output",
         required=True
     )
     parser.add_argument(
-        "-grp", "--groupings",
+        "-groups", "--groupings",
         nargs='+',
         dest='group',
         help="Columns to group unique rows by",

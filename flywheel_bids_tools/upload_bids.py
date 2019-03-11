@@ -30,6 +30,8 @@ def read_flywheel_csv(fpath, required_cols=['acquisition.id']):
         raise Exception(("It doesn't look like this csv is correctly formatted",
         " for this flywheel editing process!"))
 
+    drop_downs = ['classification_Measurement', 'classification_Intent']
+    df.loc[:, drop_downs] = df.loc[:, drop_downs].applymap(relist_item)
     return(df)
 
 
@@ -206,22 +208,18 @@ def upload_to_flywheel(modified_df, change_index, client):
     for pair in tqdm(change_index, total=len(change_index)):
 
         # get the acquisition id
-        #change = {}
-        #acquisition = modified_df.loc[pair[0], 'acquisition.id']
-        #change[acquisition] = (modified_df.columns[pair[1]], modified_df.iloc[pair[0], pair[1]])
         acquisition = modified_df.loc[pair[0], 'acquisition.id']
         file_type = modified_df.loc[pair[0], 'type']
+
         # get the flywheel object of the acquisition
         fw_object = client.get(str(acquisition))
 
         # create the update dictionary
-
         column_list = modified_df.columns[pair[1]].split("_")
         value = modified_df.iloc[pair[0], pair[1]]
         update = create_nested_fw_dict(column_list, value)
-        print(update)
+        #print(update)
         f = [f for f in fw_object.files if f.type == file_type][0]
-        #print(f)
         if 'info' in update.keys():
             f.update_info(update['info'])
         if 'classification' in update.keys():
@@ -238,7 +236,10 @@ def create_nested_fw_dict(tree_list, value):
 
 
 def relist_item(string):
-    return([s.strip() for s in string.split(',')])
+    if type(string) is str:
+        return([s.strip() for s in string.split(',')])
+    else:
+        return string
 
 
 def main():
@@ -247,7 +248,7 @@ def main():
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "-input",
+        "-orig",
         help="Path to the original flywheel query CSV",
         dest="original",
         required=True
