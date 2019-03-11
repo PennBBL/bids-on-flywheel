@@ -218,7 +218,7 @@ def upload_to_flywheel(modified_df, change_index, client):
         column_list = modified_df.columns[pair[1]].split("_")
         value = modified_df.iloc[pair[0], pair[1]]
         update = create_nested_fw_dict(column_list, value)
-        #print(update)
+
         f = [f for f in fw_object.files if f.type == file_type][0]
         if 'info' in update.keys():
             f.update_info(update['info'])
