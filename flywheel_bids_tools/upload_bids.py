@@ -13,11 +13,7 @@ from tqdm import tqdm
 ERROR_MESSAGES = []
 
 
-def read_flywheel_csv(fpath, required_cols=['acquisition.label',
-    'valid', 'acquisition.id', 'project.label', 'session.label',
-    'subject.label', 'Filename', 'Folder', 'IntendedFor', 'Mod',
-    'Modality', 'Path', 'Rec', 'Run', 'Task', 'error_message',
-    'ignore', 'template']):
+def read_flywheel_csv(fpath, required_cols=['acquisition.id']):
     '''
     Read in a CSV and also ensure it's one of ours
 
@@ -30,8 +26,8 @@ def read_flywheel_csv(fpath, required_cols=['acquisition.label',
 
     df = pd.read_csv(fpath, dtype={'valid':object})
 
-    if set(required_cols) != set(df.columns):
-        raise Exception(("It doesn't look like this csv is correctly formatted"
+    if not all(elem in df.columns.tolist() for elem in required_cols):
+        raise Exception(("It doesn't look like this csv is correctly formatted",
         " for this flywheel editing process!"))
 
     return(df)
@@ -120,8 +116,8 @@ def change_checker(user_input, column):
         ERROR_MESSAGES.append("You cannot edit the acquisition ID!")
         return False
     else:
-        raise Exception("Column {0} not recognised!".format(column))
-
+    #    raise Exception("Column {0} not recognised!".format(column))
+        return True
 
 def get_unequal_cells(df1, df2, provenance=True):
     '''
@@ -207,29 +203,38 @@ def upload_to_flywheel(modified_df, change_index, client):
     '''
 
     # loop through each of the row_col indexes of changes
-    pbar = tqdm(total=100)
-    for pair in change_index:
+    for pair in tqdm(change_index, total=len(change_index)):
 
         # get the acquisition id
-        change = {}
+        #change = {}
+        #acquisition = modified_df.loc[pair[0], 'acquisition.id']
+        #change[acquisition] = (modified_df.columns[pair[1]], modified_df.iloc[pair[0], pair[1]])
         acquisition = modified_df.loc[pair[0], 'acquisition.id']
-        change[acquisition] = (modified_df.columns[pair[1]], modified_df.iloc[pair[0], pair[1]])
-
+        file_type = modified_df.loc[pair[0], 'type']
         # get the flywheel object of the acquisition
         fw_object = client.get(str(acquisition))
 
-        # get the nifti file for the acquisition
-        nifti = [x for x in fw_object.files if x['type'] == 'nifti']
-        nifti = nifti[0]
-        BIDS = nifti['info']['BIDS']
+        # create the update dictionary
 
-        # edit the BIDS info and update flywheel
-        BIDS[change[acquisition][0]] = change[acquisition][1]
-        nifti.update_info({'BIDS': BIDS})
-        pbar.update(10)
-    pbar.close()
+        column_list = modified_df.columns[pair[1]].split("_")
+        value = modified_df.iloc[pair[0], pair[1]]
+        update = create_nested_fw_dict(column_list, value)
+        print(update)
+        f = [f for f in fw_object.files if f.type == file_type][0]
+        #print(f)
+        if 'info' in update.keys():
+            f.update_info(update['info'])
+        if 'classification' in update.keys():
+            f.update_classification(update['classification'])
 
     return
+
+
+def create_nested_fw_dict(tree_list, value):
+
+    if tree_list:
+        return {tree_list[0]: create_nested_fw_dict(tree_list[1:], value)}
+    return value
 
 
 def relist_item(string):
@@ -242,28 +247,24 @@ def main():
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "original",
-        help="Path to the original flywheel query CSV"
+        "-input",
+        help="Path to the original flywheel query CSV",
+        dest="original",
+        required=True
     )
     parser.add_argument(
-        "modified",
-        help="Path to the modified flywheel query CSV"
+        "-mod",
+        help="Path to the modified flywheel query CSV",
+        dest="modified",
+        required=True
     )
-    parser.add_argument(
-        "grp", "--groupings",
-        nargs='+',
-        dest='list',
-        default=None
-    )
+
     args = parser.parse_args()
 
     # original df
     df_original = read_flywheel_csv(args.original)
     # edited df
     df_modified = read_flywheel_csv(args.modified)
-    if args.grp:
-        temp = df_original.copy()
-        df_modified = temp.update(df_modified)
 
     # check for equality of each cell between the original and modified
     unequal = get_unequal_cells(df_original, df_modified)

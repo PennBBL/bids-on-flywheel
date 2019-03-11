@@ -147,6 +147,9 @@ def process_acquisition(acq_id, client):
     # lastly, only pull niftis and dicoms; also convert list to string
     if 'type' in df.columns:
         df = df[df.type.str.contains(r'(nifti)|dicom')].reset_index(drop=True)
+    if 'BIDS' not in df.columns:
+        global NO_DATA
+        NO_DATA += 1
     list_cols = (df.applymap(type) == list).all()
     df.loc[:, list_cols] = df.loc[:, list_cols].applymap(unlist_item)
     return df
@@ -221,6 +224,7 @@ def query_bids_validity(project, client, VERBOSE=True):
     merged_data = pd.merge(acquisitions, bids_classifications, how='outer')
     if VERBOSE:
         print("{} acquisitions could not be processed.".format(UNCLASSIFIED))
+        print("{} acquisitions do not have BIDS information yet.".format(NO_DATA))
     return(merged_data)
 
 
