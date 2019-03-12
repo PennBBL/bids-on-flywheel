@@ -1,6 +1,5 @@
 import pandas as pd
 import argparse
-from tqdm import tqdm
 from .query_bids import unlist_item
 
 
@@ -26,7 +25,7 @@ def read_flywheel_csv(fpath, required_cols=['acquisition.label']):
 
 def main():
 
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(description=("Use this tool to group a Flywheel query file by a column with common values."))
     parser.add_argument(
         "-input", "--input-file",
         dest='infile',

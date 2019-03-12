@@ -24,7 +24,8 @@ setuptools.setup(
             'upload-bids=flywheel_bids_tools.upload_bids:main',
             'group-query=flywheel_bids_tools.group_query:main',
             'ungroup-query=flywheel_bids_tools.ungroup_query:main',
-            'query-gears=flywheel_bids_tools.query_gears:main'
+            'query-gears=flywheel_bids_tools.query_gears:main',
+            'run-gear=flywheel_bids_tools.run_gear:main'
         ],
     }
 )

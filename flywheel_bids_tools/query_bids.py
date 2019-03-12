@@ -235,7 +235,7 @@ def main():
         fw = flywheel.Client()
         assert fw, "Your Flywheel CLI credentials aren't set!"
 
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(description=("Use this tool to query Flywheel for a project and write out the acquisitions to a table"))
     parser.add_argument(
         "-proj", "--project",
         help="The project in flywheel to search for",
