@@ -30,6 +30,7 @@ def read_flywheel_csv(fpath, required_cols=['acquisition.id']):
         raise Exception(("It doesn't look like this csv is correctly formatted",
         " for this flywheel editing process!"))
 
+    df = df.sort_values(by="acquisition.id")
     drop_downs = ['classification_Measurement', 'classification_Intent']
     df.loc[:, drop_downs] = df.loc[:, drop_downs].applymap(relist_item)
     return(df)

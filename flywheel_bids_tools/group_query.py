@@ -20,6 +20,7 @@ def read_flywheel_csv(fpath, required_cols=['acquisition.label']):
         raise Exception(("It doesn't look like this csv is correctly formatted",
         " for this flywheel editing process!"))
 
+    df = df.sort_values(by="acquisition.id")
     return(df)
 
 

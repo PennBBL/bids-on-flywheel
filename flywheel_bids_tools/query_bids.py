@@ -262,6 +262,7 @@ def main():
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         query_result = query_bids_validity(project, fw)
+        query_result = query_result.sort_values(by="acquisition.id")
         query_result.to_csv(args.output, index=False)
     print("Done!")
 

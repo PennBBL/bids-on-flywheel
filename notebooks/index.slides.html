@@ -16,8 +16,8 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
 
 <!-- General and theme style sheets -->
-<link rel="stylesheet" href="reveal.js/css/reveal.css">
-<link rel="stylesheet" href="reveal.js/css/theme/simple.css" id="theme">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/3.5.0/css/reveal.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/3.5.0/css/theme/simple.css" id="theme">
 
 <!-- If the query includes 'print-pdf', include the PDF print sheet -->
 <script>
@@ -25,14 +25,14 @@ if( window.location.search.match( /print-pdf/gi ) ) {
         var link = document.createElement( 'link' );
         link.rel = 'stylesheet';
         link.type = 'text/css';
-        link.href = 'reveal.js/css/print/pdf.css';
+        link.href = 'https://cdnjs.cloudflare.com/ajax/libs/reveal.js/3.5.0/css/print/pdf.css';
         document.getElementsByTagName( 'head' )[0].appendChild( link );
 }
 
 </script>
 
 <!--[if lt IE 9]>
-<script src="reveal.js/lib/js/html5shiv.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/3.5.0/lib/js/html5shiv.js"></script>
 <![endif]-->
 
 <!-- Loading the mathjax macro -->
@@ -13256,9 +13256,10 @@ a.anchor-link {
 <div class="text_cell_render border-box-sizing rendered_html">
 <h1 id="Why-This-Toolkit?">Why This Toolkit?<a class="anchor-link" href="#Why-This-Toolkit?">&#182;</a></h1><ul>
 <li>Flywheel-BIDS tools make editing Flywheel data easier</li>
-<li>Bridge between point-and-click data management and programmatic data munging<ul>
+<li>Bridge between point-and-click data management (GUI) and programmatic data munging (SDK w/ Python, R, Bash):<ul>
 <li>One-liner command line tools</li>
-<li>Helpful python function</li>
+<li>Helpful python functions</li>
+<li>At your disposal and your discretion</li>
 </ul>
 </li>
 </ul>
@@ -13269,7 +13270,7 @@ a.anchor-link {
 <div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
 </div><div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h1 id="Ideal-Use-Case">Ideal Use-Case<a class="anchor-link" href="#Ideal-Use-Case">&#182;</a></h1><ul>
+<h1 id="Ideal-Use-Cases">Ideal Use-Cases<a class="anchor-link" href="#Ideal-Use-Cases">&#182;</a></h1><ul>
 <li>Correcting data on Flywheel that has been uploaded incorrectly</li>
 <li>Correcting data on Flywheel has been mislabeled by Flywheel programs (Gears)</li>
 <li>Examining raw data on a large scale e.g. as a table</li>
@@ -13283,25 +13284,25 @@ a.anchor-link {
 </div><div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
 <h1 id="Basic-Use">Basic Use<a class="anchor-link" href="#Basic-Use">&#182;</a></h1><ol>
-<li><strong>Query Flywheel</strong></li>
-</ol>
+<li><p><strong>Query Flywheel</strong></p>
 <p><code>query-bids -proj -out</code></p>
-<ol>
-<li><strong>Group query</strong> **</li>
-</ol>
+</li>
+<li><p><strong>Group query</strong> **</p>
 <p><code>group-query -input -output -grps</code></p>
+</li>
+</ol>
 <ol>
 <li><strong>Edit data</strong>
 In the editor of your choice; don't forget to keep in CSV format</li>
 </ol>
 <ol>
-<li><strong>Ungroup edits</strong> **</li>
-</ol>
+<li><p><strong>Ungroup edits</strong> **</p>
 <p><code>ungroup-query -grouped -mod -orig -output</code></p>
-<ol>
-<li><strong>Upload edits</strong></li>
-</ol>
+</li>
+<li><p><strong>Upload edits</strong></p>
 <p><code>upload-bids -orig -mod</code></p>
+</li>
+</ol>
 <p>** optional steps</p>
 
 </div>
@@ -14131,8 +14132,8 @@ require(
       waitSeconds: 15
     },
     [
-      "reveal.js/lib/js/head.min.js",
-      "reveal.js/js/reveal.js"
+      "https://cdnjs.cloudflare.com/ajax/libs/reveal.js/3.5.0/lib/js/head.min.js",
+      "https://cdnjs.cloudflare.com/ajax/libs/reveal.js/3.5.0/js/reveal.js"
     ],
 
     function(head, Reveal){
@@ -14147,9 +14148,9 @@ require(
 
             // Optional libraries used to extend on reveal.js
             dependencies: [
-                { src: "reveal.js/lib/js/classList.js",
+                { src: "https://cdnjs.cloudflare.com/ajax/libs/reveal.js/3.5.0/lib/js/classList.js",
                   condition: function() { return !document.body.classList; } },
-                { src: "reveal.js/plugin/notes/notes.js",
+                { src: "https://cdnjs.cloudflare.com/ajax/libs/reveal.js/3.5.0/plugin/notes/notes.js",
                   async: true,
                   condition: function() { return !!document.body.classList; } }
             ]
