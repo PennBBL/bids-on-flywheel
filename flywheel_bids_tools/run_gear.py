@@ -8,6 +8,9 @@ def process_config(config):
     Process the config file to determine the inputs and outputs
     '''
 
+    if config['name'] == "dicom-mr-classifier":
+
+        input_1 = "acquisition.id"
     inputs = config['inputs']
     print(list(inputs.keys()))
     print('base' in list(inputs.keys()))

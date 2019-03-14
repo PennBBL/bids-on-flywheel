@@ -5,8 +5,9 @@ import argparse
 from tqdm import tqdm
 import re
 from pandas.io.json.normalize import nested_to_record
+from pandas.api.types import is_list_like
 import warnings
-
+from flywheel_bids_tools import utils
 
 UNCLASSIFIED = 0
 NO_DATA = 0
@@ -32,12 +33,14 @@ def query_fw(project, client):
     project_object
         A flywheel project container object.
     """
-    try:
-        project_object = client.projects.find_first('label={0}'.format(project))
-        return(project_object)
-    except:
-        print("Could not find a project in flywheel with that name!")
-        sys.exit(0)
+    project_object = client.projects.find_first('label={0}'.format(project))
+
+    if project_object is None:
+        print("Available projects are:\n")
+        for p in client.projects():
+            print('%s' % (p.label))
+        raise ValueError("Could not find \"{0}\" project on Flywheel!".format(project))
+    return(project_object)
 
 
 def extract_bids_data(acquisitionID, client):
@@ -101,16 +104,6 @@ def extract_bids_data(acquisitionID, client):
         return(df)
 
 
-def unlist_item(ls):
-    '''Convert a list item to a comma-separated string
-    '''
-    if type(ls) is list:
-        ls.sort()
-        return(', '.join(x for x in ls))
-    else:
-        return float('nan')
-
-
 def process_acquisition(acq_id, client):
     '''
     Extract an acquisition
@@ -123,13 +116,15 @@ def process_acquisition(acq_id, client):
 
     # get the acquisition object
     acq = client.get(acq_id)
-
+    if acq is None:
+        global UNCLASSIFIED
+        UNCLASSIFIED += 1
     # convert to dictionary, and flatten the dictionary to avoid nested dicts
     files = [x.to_dict() for x in acq.files]
     flat_files = [nested_to_record(my_dict, sep='_') for my_dict in files]
 
     # define desirable columns in regex
-    cols = r'(classification)|(^type$)|(^modality$)|(BIDS)|(RepetitionTime)|(SequenceName)|(SeriesDescription)'
+    cols = r'(classification)|(^type$)|(^modality$)|(BIDS)|(EchoTime)|(RepetitionTime)|(SequenceName)|(SeriesDescription)'
 
     # filter the dict keys for the columns names
     flat_files = [
@@ -150,8 +145,7 @@ def process_acquisition(acq_id, client):
     if 'BIDS' not in df.columns:
         global NO_DATA
         NO_DATA += 1
-    list_cols = (df.applymap(type) == list).all()
-    df.loc[:, list_cols] = df.loc[:, list_cols].applymap(unlist_item)
+
     return df
 
 
@@ -208,13 +202,9 @@ def query_bids_validity(project, client, VERBOSE=True):
         print("Extracting BIDS and MR Classifier information...")
     bids_classifications = []
     for index, row in tqdm(acquisitions.iterrows(), total=acquisitions.shape[0]):
-        try:
-            temp = process_acquisition(row["acquisition.id"], client)
-            bids_classifications.append(temp)
-        except:
-            global UNCLASSIFIED
-            UNCLASSIFIED += 1
-            continue
+
+        temp = process_acquisition(row["acquisition.id"], client)
+        bids_classifications.append(temp)
 
     bids_classifications = pd.concat(bids_classifications)
 
@@ -222,6 +212,7 @@ def query_bids_validity(project, client, VERBOSE=True):
     if VERBOSE:
         print("Tidying and returning the results...")
     merged_data = pd.merge(acquisitions, bids_classifications, how='outer')
+    merged_data = merged_data.drop(columns=['acquisition.timestamp', 'acquisition.timezone', 'project.id', 'session.id', 'subject.id'])
     if VERBOSE:
         print("{} acquisitions could not be processed.".format(UNCLASSIFIED))
         print("{} acquisitions do not have BIDS information yet.".format(NO_DATA))
@@ -256,6 +247,7 @@ def main():
     )
 
     args = parser.parse_args()
+
     global VERBOSE
     VERBOSE = args.verbose
     project = ' '.join(args.project)
@@ -263,6 +255,9 @@ def main():
         warnings.simplefilter("ignore")
         query_result = query_bids_validity(project, fw)
         query_result = query_result.sort_values(by="acquisition.id")
+        infer_type = lambda x: pd.api.types.infer_dtype(x, skipna=True)
+        list_cols = query_result.apply(infer_type, axis=0) == 'mixed'
+        query_result.loc[:, list_cols] = query_result.loc[:, list_cols].applymap(utils.unlist_item)
         query_result.to_csv(args.output, index=False)
     print("Done!")
 

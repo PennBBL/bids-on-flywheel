@@ -1,6 +1,6 @@
 import pandas as pd
 import argparse
-from .query_bids import unlist_item
+from flywheel_bids_tools import utils
 
 
 def read_flywheel_csv(fpath, required_cols=['acquisition.label']):
@@ -64,7 +64,8 @@ def main():
         .nth(1)
         .reset_index(drop=True))
     # add index for group indeces
-    query_result['groups'] = unlist_item(args.group)
+    query_result['groups'] = utils.unlist_item(args.group)
+    query_result = query_result.sort_values(by="acquisition.id")
     query_result.to_csv(args.group_output, index=False)
     print("Done")
 

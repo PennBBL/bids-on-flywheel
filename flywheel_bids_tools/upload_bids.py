@@ -7,6 +7,7 @@ import flywheel
 import math
 import datetime
 import argparse
+from utilities import relist_item
 from tqdm import tqdm
 
 
@@ -234,13 +235,6 @@ def create_nested_fw_dict(tree_list, value):
     if tree_list:
         return {tree_list[0]: create_nested_fw_dict(tree_list[1:], value)}
     return value
-
-
-def relist_item(string):
-    if type(string) is str:
-        return([s.strip() for s in string.split(',')])
-    else:
-        return string
 
 
 def main():

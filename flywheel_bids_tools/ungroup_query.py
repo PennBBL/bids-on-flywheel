@@ -1,7 +1,6 @@
 import pandas as pd
 import argparse
-from tqdm import tqdm
-from .upload_bids import get_unequal_cells, relist_item
+from upload_bids import get_unequal_cells, relist_item
 
 
 def read_flywheel_csv(fpath, required_cols=['acquisition.label']):
@@ -89,6 +88,7 @@ def main():
         df_original.loc[df_original['group_id'] == group, change[0]] = change[1]
 
     df_original.drop(columns='group_id', inplace=True)
+    df_original = df_original.sort_values(by="acquisition.id")
     df_original.to_csv(args.output, index=False)
     print("Done")
 
