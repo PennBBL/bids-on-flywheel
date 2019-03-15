@@ -107,7 +107,7 @@ def test_get_mr_get_bids(get_mr_get_bids):
 @pytest.fixture()
 def tidy_classifications(get_mr_get_bids, process_acquisitions):
 
-    bids_classifications = pd.concat(get_mr_get_bids)
+    bids_classifications = pd.concat(get_mr_get_bids, sort=True)
     merged_data = pd.merge(process_acquisitions, bids_classifications, how='outer')
     merged_data = merged_data.drop(columns=['acquisition.timestamp', 'acquisition.timezone', 'project.id', 'session.id', 'subject.id'])
     merged_data = merged_data.sort_values(by="acquisition.id")
@@ -202,6 +202,7 @@ def test_read_in2(read_in2):
     assert read_in2[0].shape[0] == 15
     assert read_in2[1].shape[0] == 15
 
+
 '''
 2. Ungroup
 '''
@@ -225,7 +226,7 @@ def ungroup(read_in1, read_in2):
         .add(1))
 
     # index the differences
-    diff = upload_bids.get_unequal_cells(df_grouped_modified, df_grouped)
+    diff = upload_bids.get_unequal_cells(df_grouped_modified, df_grouped, provenance=True)
 
     changes = {}
 
@@ -234,9 +235,6 @@ def ungroup(read_in1, read_in2):
         key = df_grouped_modified.loc[x[0], 'group_id']
         val = (df_grouped_modified.columns[x[1]], df_grouped_modified.iloc[x[0], x[1]])
         changes.update({key: val})
-
-    # loop through the differences and map them to the full dataset
-    print("Applying the changes to the full dataset...")
 
     for group, change in changes.items():
         df_original.loc[df_original['group_id'] == group, change[0]] = change[1]
@@ -251,3 +249,64 @@ def test_ungroup(ungroup):
     assert ungroup is not None
     assert ungroup.shape[0] == 55
     assert os.path.isfile("../data/Testing/testing_final.csv")
+
+
+'''
+=========================================================
+Step 5. upload
+=========================================================
+'''
+
+'''
+1. Read in
+'''
+@pytest.fixture()
+def read_in3():
+
+    original = utils.read_flywheel_csv("../data/Testing/test_query.csv")
+    modified = utils.read_flywheel_csv("../data/Testing/testing_final.csv")
+    return original, modified
+
+
+def test_read_in3(read_in3):
+
+    assert read_in3[0] is not None
+    assert read_in3[1] is not None
+    assert read_in3[0].shape == read_in3[1].shape
+
+'''
+2. Validate
+'''
+@pytest.fixture()
+def validate(read_in3):
+
+    # original df
+    df_original = read_in3[0]
+    # edited df
+    df_modified = read_in3[1]
+
+    # check for equality of each cell between the original and modified
+    unequal = upload_bids.get_unequal_cells(df_original, df_modified, provenance=True)
+    # if any unequal, assess the validity of the modification
+    res = upload_bids.validate_on_unequal_cells(unequal, df_modified)
+
+    return upload_bids.ERROR_MESSAGES, res, df_modified, unequal
+
+def test_validate(validate):
+
+    assert len(validate[0]) == 0
+    assert validate[1]
+
+'''
+3. Upload
+'''
+# @pytest.fixture()
+# def upload(validate, fw):
+#
+#     upload_bids.upload_to_flywheel(validate[3], validate[4], fw)
+#
+#     return None
+#
+# def test_upload(upload):
+#
+#     assert upload is None

@@ -72,7 +72,7 @@ def main():
         .add(1))
 
     # index the differences
-    diff = get_unequal_cells(df_grouped_modified, df_grouped)
+    diff = get_unequal_cells(df_grouped_modified, df_grouped, provenance=True)
 
     changes = {}
 

@@ -141,7 +141,7 @@ def process_acquisition(acq_id, client):
 
     # lastly, only pull niftis and dicoms; also convert list to string
     if 'type' in df.columns:
-        df = df[df.type.str.contains(r'(nifti)|dicom')].reset_index(drop=True)
+        df = df[df.type.str.contains(r'nifti|dicom')].reset_index(drop=True)
     if 'BIDS' not in df.columns:
         global NO_DATA
         NO_DATA += 1
