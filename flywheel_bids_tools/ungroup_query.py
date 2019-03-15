@@ -1,6 +1,7 @@
 import pandas as pd
 import argparse
-from upload_bids import get_unequal_cells, relist_item
+from flywheel_bids_tools.upload_bids import get_unequal_cells
+from flywheel_bids_tools.utils import relist_item
 
 
 def read_flywheel_csv(fpath, required_cols=['acquisition.label']):

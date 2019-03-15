@@ -7,7 +7,7 @@ import flywheel
 import math
 import datetime
 import argparse
-from utilities import relist_item
+from flywheel_bids_tools.utils import relist_item
 from tqdm import tqdm
 
 

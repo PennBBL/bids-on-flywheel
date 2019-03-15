@@ -4,7 +4,7 @@ import pytest
 import warnings
 import flywheel
 sys.path.append("..")
-from flywheel_bids_tools import utils, query_bids
+from flywheel_bids_tools import utils, query_bids, upload_bids
 from tqdm import tqdm
 import pandas as pd
 # from flywheel_bids_tools import group_query
@@ -130,43 +130,124 @@ Step 2. group-query
 =========================================================
 '''
 
-# '''
-# 1. Read in
-# '''
-# @pytest.fixture()
-# def read_ungrouped():
-#
-#     df = utils.read_flywheel_csv("../data/Testing/test_query.csv")
-#     return df
-#
-# def test_read_ungrouped(read_ungrouped):
-#
-#     assert read_ungrouped is not None
-#     assert read_ungrouped.shape[0] == 55
-#
-# '''
-# 2. group and write out
-# '''
-# @pytest.fixture()
-# def group_df(read_grouped, groups=['info_SeriesDescription', 'type']):
-#
-#     read_grouped['group_id'] = (read_grouped
-#         # groupby and keep the columns as columns
-#         .groupby(groups, as_index=False)
-#         # index the groups
-#         .ngroup()
-#         .add(1))
-#     read_grouped = (read_grouped
-#         # groupby and sample 1 exemplar
-#         .groupby(groups, as_index=False)
-#         .nth(1)
-#         .reset_index(drop=True))
-#     # add index for group indeces
-#     read_grouped['groups'] = utils.unlist_item(groups)
-#     read_grouped = read_grouped.sort_values(by="acquisition.id")
-#     return read_grouped
-#
-# def test_group_df(group_df):
-#
-#     assert group_df is not None
-#     assert read_ungrouped.shape[0] == 55
+'''
+1. Read in
+'''
+@pytest.fixture()
+def read_in1():
+
+    df = utils.read_flywheel_csv("../data/Testing/test_query.csv")
+    return df
+
+def test_read_in1(read_in1):
+
+    assert read_in1 is not None
+    assert read_in1.shape[0] == 55
+
+'''
+2. group and write out
+'''
+@pytest.fixture()
+def group_df(read_in1, groups=['info_SeriesDescription', 'type']):
+
+    read_in1['group_id'] = (read_in1
+        # groupby and keep the columns as columns
+        .groupby(groups, as_index=False)
+        # index the groups
+        .ngroup()
+        .add(1))
+    read_in1 = (read_in1
+        # groupby and sample 1 exemplar
+        .groupby(groups, as_index=False)
+        .nth(1)
+        .reset_index(drop=True))
+    # add index for group indeces
+    read_in1['groups'] = utils.unlist_item(groups)
+    read_in1 = read_in1.sort_values(by="acquisition.id")
+    read_in1.to_csv("../data/Testing/test_query_grouped.csv", index=False)
+    return read_in1
+
+def test_group_df(group_df):
+
+    assert group_df is not None
+    assert group_df.shape[0] == 15
+    assert os.path.isfile("../data/Testing/test_query_grouped.csv")
+
+'''
+=========================================================
+Step 3. Manipulate
+=========================================================
+'''
+
+'''
+=========================================================
+Step 4. ungroup-query
+=========================================================
+'''
+
+'''
+1. Read in
+'''
+@pytest.fixture()
+def read_in2():
+
+    original = utils.read_flywheel_csv("../data/Testing/test_query_grouped.csv")
+    modified = utils.read_flywheel_csv("../data/Testing/test_query_grouped_modified.csv")
+    return original, modified
+
+def test_read_in2(read_in2):
+
+    assert read_in2[0] is not None
+    assert read_in2[1] is not None
+    assert read_in2[0].shape[0] == 15
+    assert read_in2[1].shape[0] == 15
+
+'''
+2. Ungroup
+'''
+@pytest.fixture()
+def ungroup(read_in1, read_in2):
+
+    df_grouped_modified = read_in2[1]
+    groups = utils.relist_item(df_grouped_modified['groups'][0])
+
+    # grouped unedited
+    df_grouped = read_in2[0]
+
+    # original df
+    df_original = read_in1
+    # add groupings
+    df_original['group_id'] = (df_original
+        # groupby and keep the columns as columns
+        .groupby(groups, as_index=False)
+        # index the groups
+        .ngroup()
+        .add(1))
+
+    # index the differences
+    diff = upload_bids.get_unequal_cells(df_grouped_modified, df_grouped)
+
+    changes = {}
+
+    for x in diff:
+
+        key = df_grouped_modified.loc[x[0], 'group_id']
+        val = (df_grouped_modified.columns[x[1]], df_grouped_modified.iloc[x[0], x[1]])
+        changes.update({key: val})
+
+    # loop through the differences and map them to the full dataset
+    print("Applying the changes to the full dataset...")
+
+    for group, change in changes.items():
+        df_original.loc[df_original['group_id'] == group, change[0]] = change[1]
+
+    df_original.drop(columns='group_id', inplace=True)
+    df_original = df_original.sort_values(by="acquisition.id")
+    df_original.to_csv("../data/Testing/testing_final.csv", index=False)
+    return df_original
+
+def test_ungroup(ungroup):
+
+    assert ungroup is not None
+    assert ungroup.shape[0] == 55
+    assert os.path.isfile("../data/Testing/testing_final.csv")
