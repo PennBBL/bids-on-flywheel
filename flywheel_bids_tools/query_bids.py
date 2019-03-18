@@ -141,7 +141,7 @@ def process_acquisition(acq_id, client):
 
     # lastly, only pull niftis and dicoms; also convert list to string
     if 'type' in df.columns:
-        df = df[df.type.str.contains(r'nifti|dicom')].reset_index(drop=True)
+        df = df[df.type.str.contains(r'nifti|dicom', na=False)].reset_index(drop=True)
     if 'BIDS' not in df.columns:
         global NO_DATA
         NO_DATA += 1
@@ -206,7 +206,7 @@ def query_bids_validity(project, client, VERBOSE=True):
         temp = process_acquisition(row["acquisition.id"], client)
         bids_classifications.append(temp)
 
-    bids_classifications = pd.concat(bids_classifications)
+    bids_classifications = pd.concat(bids_classifications, sort=False)
 
     # finally, join the bids classification with the acquisitions
     if VERBOSE:
@@ -254,7 +254,7 @@ def main():
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         query_result = query_bids_validity(project, fw)
-        query_result = query_result.sort_values(by="acquisition.id")
+        query_result = query_result.sort_values(by=["acquisition.id", "acquisition.label"])
         infer_type = lambda x: pd.api.types.infer_dtype(x, skipna=True)
         list_cols = query_result.apply(infer_type, axis=0) == 'mixed'
         query_result.loc[:, list_cols] = query_result.loc[:, list_cols].applymap(utils.unlist_item)

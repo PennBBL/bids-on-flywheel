@@ -3,7 +3,7 @@ import argparse
 from flywheel_bids_tools import utils
 
 
-def read_flywheel_csv(fpath, required_cols=['acquisition.label']):
+def read_flywheel_csv(fpath, required_cols=['acquisition.id']):
     '''
     Read in a CSV and also ensure it's one of ours
 
@@ -20,7 +20,7 @@ def read_flywheel_csv(fpath, required_cols=['acquisition.label']):
         raise Exception(("It doesn't look like this csv is correctly formatted",
         " for this flywheel editing process!"))
 
-    df = df.sort_values(by="acquisition.id")
+    df = df.sort_values(by=["acquisition.id", "acquisition.label"])
     return(df)
 
 
@@ -65,7 +65,7 @@ def main():
         .reset_index(drop=True))
     # add index for group indeces
     query_result['groups'] = utils.unlist_item(args.group)
-    query_result = query_result.sort_values(by="acquisition.id")
+    query_result = query_result.sort_values(by=["acquisition.id", "acquisition.label"])
     query_result.to_csv(args.group_output, index=False)
     print("Done")
 

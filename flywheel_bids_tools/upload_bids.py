@@ -32,7 +32,7 @@ def read_flywheel_csv(fpath, required_cols=['acquisition.id']):
         raise Exception(("It doesn't look like this csv is correctly formatted",
         " for this flywheel editing process!"))
 
-    df = df.sort_values(by="acquisition.id")
+    df = df.sort_values(by=["acquisition.id", "acquisition.label"])
     drop_downs = ['classification_Measurement', 'classification_Intent']
     df.loc[:, drop_downs] = df.loc[:, drop_downs].applymap(relist_item)
     return(df)
@@ -73,7 +73,9 @@ def change_checker(user_input, column):
         'subject.label', 'folder', 'template',
         'intendedfor', 'mod', 'path', 'rec', 'task', 'run',
         'info_bids_error_message', 'info_sequencename',
-        'type']
+        'info_bids_filename', 'type', 'info_bids_folder', 'info_bids_modality',
+        'info_bids_path', 'info_bids_template', 'info_seriesdescription',
+        'classification_custom']
 
     numeric_fields = ['info_echotime', 'info_repetitiontime']
 
@@ -97,7 +99,10 @@ def change_checker(user_input, column):
 
     # try drop down multi option
     elif column.lower() in drop_down_multi_fields.keys():
-        if set(user_input) <= set(drop_down_multi_fields[column.lower]):
+
+        if not isinstance(user_input, list):
+             user_input = [user_input]
+        if set(user_input) <= set(drop_down_multi_fields[column.lower()]):
                 return True
         else:
             ERROR_MESSAGES.append("This field must match one of the available options in the drop-down menu on the website!")
@@ -204,13 +209,15 @@ def upload_to_flywheel(modified_df, change_index, client):
         # create the update dictionary
         column_list = modified_df.columns[pair[1]].split("_")
         value = modified_df.iloc[pair[0], pair[1]]
+        if value is float('nan'):
+            continue
         update = create_nested_fw_dict(column_list, value)
 
         f = [f for f in fw_object.files if f.type == file_type][0]
         if 'info' in update.keys():
             f.update_info(update['info'])
         if 'classification' in update.keys():
-            f.update_classification(update['classification'])
+            f.replace_classification(update['classification'])
 
     return
 

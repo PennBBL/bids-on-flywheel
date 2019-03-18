@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="flywheel_bids_tools",
-    version="0.0.6",
+    version="0.0.7",
     author="Tinashe M. Tapera",
     author_email="tinashemtapera@gmail.com",
     description="Tools for extracting, editing, and uploading BIDS data from and to Flywheel",

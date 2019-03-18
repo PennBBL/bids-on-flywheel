@@ -4,7 +4,7 @@ from flywheel_bids_tools.upload_bids import get_unequal_cells
 from flywheel_bids_tools.utils import relist_item
 
 
-def read_flywheel_csv(fpath, required_cols=['acquisition.label']):
+def read_flywheel_csv(fpath, required_cols=['acquisition.id']):
     '''
     Read in a CSV and also ensure it's one of ours
 
@@ -20,7 +20,7 @@ def read_flywheel_csv(fpath, required_cols=['acquisition.label']):
     if not all(elem in df.columns.tolist() for elem in required_cols):
         raise Exception(("It doesn't look like this csv is correctly formatted",
         " for this flywheel editing process!"))
-    df = df.sort_values(by="acquisition.id")
+    df = df.sort_values(by=["acquisition.id", "acquisition.label"])
     return(df)
 
 
@@ -89,7 +89,7 @@ def main():
         df_original.loc[df_original['group_id'] == group, change[0]] = change[1]
 
     df_original.drop(columns='group_id', inplace=True)
-    df_original = df_original.sort_values(by="acquisition.id")
+    df_original = df_original.sort_values(by=["acquisition.id", "acquisition.label"])
     df_original.to_csv(args.output, index=False)
     print("Done")
 

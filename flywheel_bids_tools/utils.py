@@ -21,7 +21,7 @@ def relist_item(string):
         return string
 
 
-def read_flywheel_csv(fpath, required_cols=['acquisition.label']):
+def read_flywheel_csv(fpath, required_cols=['acquisition.id']):
     '''
     Read in a CSV and also ensure it's one of ours
 
@@ -37,7 +37,7 @@ def read_flywheel_csv(fpath, required_cols=['acquisition.label']):
     if not all(elem in df.columns.tolist() for elem in required_cols):
         raise Exception(("It doesn't look like this csv is correctly formatted",
         " for this flywheel editing process!"))
-    df = df.sort_values(by="acquisition.id")
+    df = df.sort_values(by=["acquisition.id", "acquisition.label"])
     return(df)
 
 
