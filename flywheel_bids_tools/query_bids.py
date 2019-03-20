@@ -7,7 +7,7 @@ import re
 from pandas.io.json.normalize import nested_to_record
 from pandas.api.types import is_list_like
 import warnings
-from flywheel_bids_tools import utils
+from flywheel_bids_tools.utils import unlist_item
 
 UNCLASSIFIED = 0
 NO_DATA = 0
@@ -256,8 +256,11 @@ def main():
         query_result = query_bids_validity(project, fw)
         query_result = query_result.sort_values(by=["acquisition.id", "acquisition.label"])
         infer_type = lambda x: pd.api.types.infer_dtype(x, skipna=True)
-        list_cols = query_result.apply(infer_type, axis=0) == 'mixed'
-        query_result.loc[:, list_cols] = query_result.loc[:, list_cols].applymap(utils.unlist_item)
+        #list_cols = query_result.apply(infer_type, axis=0) == 'mixed'
+        #query_result.loc[:, list_cols] = query_result.loc[:, list_cols].applymap(utils.unlist_item)
+        drop_downs = ['classification_Measurement', 'classification_Intent',
+            'classification_Features']
+        query_result.loc[:, drop_downs] = query_result.loc[:, drop_downs].applymap(unlist_item)
         query_result.to_csv(args.output, index=False)
     print("Done!")
 
