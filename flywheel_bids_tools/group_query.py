@@ -54,7 +54,7 @@ def main():
     query_result = read_flywheel_csv(args.infile)
 
     # # add a group index, group
-    group_id = query_result.duplicated(args.groups)
+    group_id = query_result.duplicated(args.group)
     group_id = ~group_id
     group_id2 = group_id.cumsum()
     query_result['group_id'] = group_id2
