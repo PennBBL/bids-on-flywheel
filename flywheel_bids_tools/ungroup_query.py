@@ -63,13 +63,12 @@ def main():
 
     # original df
     df_original = read_flywheel_csv(args.original)
+
     # add groupings
-    df_original['group_id'] = (df_original
-        # groupby and keep the columns as columns
-        .groupby(groups, as_index=False)
-        # index the groups
-        .ngroup()
-        .add(1))
+    group_id = df_original.duplicated(groups)
+    group_id = ~group_id
+    group_id2 = group_id.cumsum()
+    df_original['group_id'] = group_id2
 
     # index the differences
     diff = get_unequal_cells(df_grouped_modified, df_grouped, provenance=True)

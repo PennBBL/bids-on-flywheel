@@ -7,7 +7,7 @@ import os
 def unlist_item(ls):
     '''Convert a list item to a comma-separated string
     '''
-    if type(ls) is list:
+    if isinstance(ls, list):
         ls.sort()
         return(', '.join(x for x in ls))
     else:

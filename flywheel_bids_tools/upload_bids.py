@@ -65,8 +65,15 @@ def change_checker(user_input, column):
         'classification_measurement': ['ASL', 'B0', 'B1', 'Diffusion',
             'Fingerprinting', 'MT', 'PD', 'Perfusion', 'Spectroscopy',
             'Susceptibility', 'T1', 'T2', 'T2*', 'Velocity'],
+
         'classification_intent': ['Calibration', 'Fieldmap', 'Functional',
-            'Localizer', 'Non-Image', 'Screenshot', 'Shim', 'Structural']
+            'Localizer', 'Non-Image', 'Screenshot', 'Shim', 'Structural'],
+
+        'classification_Features': ['3D', 'Compressed-Sensing', 'Derived',
+            'Eddy-Current-Corrected', 'Fieldmap-Corrected', 'Gradient-Unwarped',
+            'In-Plane', 'Magnitude', 'Motion-Corrected', 'Multi-Band',
+            'Multi-Echo', 'Multi-Flip', 'Multi-Shell', 'Phase',
+            'Physio-Corrected', 'Quantitative', 'Steady-State']
     }
 
     string_fields = ['acquisition.label', 'project.label', 'error_message',
@@ -101,9 +108,9 @@ def change_checker(user_input, column):
     elif column.lower() in drop_down_multi_fields.keys():
 
         if not isinstance(user_input, list):
-             user_input = [user_input]
+            user_input = [user_input]
         if set(user_input) <= set(drop_down_multi_fields[column.lower()]):
-                return True
+            return True
         else:
             ERROR_MESSAGES.append("This field must match one of the available options in the drop-down menu on the website!")
             return False
