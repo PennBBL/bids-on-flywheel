@@ -92,3 +92,6 @@ def get_unequal_cells(df1, df2, provenance=True):
             provenance_df.to_csv(fname, index=False, na_rep="NA")
 
         return(indices)
+
+def is_nan(x):
+    return (x is np.nan or x != x)

@@ -4,11 +4,10 @@ import pandas as pd
 import numpy as np
 import re
 import flywheel
-import math
 import numbers
 import datetime
 import argparse
-from flywheel_bids_tools.utils import relist_item, get_unequal_cells
+from flywheel_bids_tools.utils import relist_item, get_unequal_cells, is_nan
 from tqdm import tqdm
 
 
@@ -33,7 +32,7 @@ def read_flywheel_csv(fpath, required_cols=['acquisition.id']):
         " for this flywheel editing process!"))
 
     df = df.sort_values(by=["acquisition.id", "acquisition.label"])
-    drop_downs = ['classification_Measurement', 'classification_Intent']
+    drop_downs = ['classification_Measurement', 'classification_Intent', 'classification_Features']
     df.loc[:, drop_downs] = df.loc[:, drop_downs].applymap(relist_item)
     return(df)
 
@@ -57,19 +56,19 @@ def change_checker(user_input, column):
         }
 
     drop_down_single_fields = {
-        'modality': ['', 'mr', 'ct', 'pet', 'us', 'eeg', 'ieeg', 'x-ray',
+        'modality': ['', 'nan', 'mr', 'ct', 'pet', 'us', 'eeg', 'ieeg', 'x-ray',
             'ecg', 'meg', 'nirs']
         }
 
     drop_down_multi_fields = {
-        'classification_measurement': ['ASL', 'B0', 'B1', 'Diffusion',
+        'classification_measurement': ['nan', 'ASL', 'B0', 'B1', 'Diffusion',
             'Fingerprinting', 'MT', 'PD', 'Perfusion', 'Spectroscopy',
             'Susceptibility', 'T1', 'T2', 'T2*', 'Velocity'],
 
-        'classification_intent': ['Calibration', 'Fieldmap', 'Functional',
+        'classification_intent': ['nan', 'Calibration', 'Fieldmap', 'Functional',
             'Localizer', 'Non-Image', 'Screenshot', 'Shim', 'Structural'],
 
-        'classification_Features': ['3D', 'Compressed-Sensing', 'Derived',
+        'classification_features': ['nan', '3D', 'Compressed-Sensing', 'Derived',
             'Eddy-Current-Corrected', 'Fieldmap-Corrected', 'Gradient-Unwarped',
             'In-Plane', 'Magnitude', 'Motion-Corrected', 'Multi-Band',
             'Multi-Echo', 'Multi-Flip', 'Multi-Shell', 'Phase',
@@ -86,6 +85,9 @@ def change_checker(user_input, column):
 
     numeric_fields = ['info_echotime', 'info_repetitiontime']
 
+    # na is acceptible by default
+    if is_nan(user_input):
+        return True
     # try boolean drop down option
     if column.lower() in drop_down_bool.keys():
         if str(user_input).lower() == 'true' or str(user_input).lower() == 'false':
@@ -101,7 +103,7 @@ def change_checker(user_input, column):
                 return True
             else:
                 continue
-        ERROR_MESSAGES.append("This field must match one of the available options in the drop-down menu on the website!")
+        ERROR_MESSAGES.append("Items in this field must exactly match one of the available options in the drop-down menu on the website!")
         return False
 
     # try drop down multi option
@@ -117,7 +119,7 @@ def change_checker(user_input, column):
 
     # try generic string
     elif column.lower() in string_fields:
-        if type(user_input) is str or math.isnan(user_input):
+        if type(user_input) is str or is_nan(user_input):
             return True
         else:
             ERROR_MESSAGES.append("This field only accepts strings!")
@@ -216,15 +218,17 @@ def upload_to_flywheel(modified_df, change_index, client):
         # create the update dictionary
         column_list = modified_df.columns[pair[1]].split("_")
         value = modified_df.iloc[pair[0], pair[1]]
-        if value is float('nan'):
-            continue
+        if is_nan(value):
+            value = ''
         update = create_nested_fw_dict(column_list, value)
 
         f = [f for f in fw_object.files if f.type == file_type][0]
         if 'info' in update.keys():
             f.update_info(update['info'])
-        if 'classification' in update.keys():
+        elif 'classification' in update.keys():
             f.replace_classification(update['classification'])
+        else:
+            print("We haven't added functionality for this type of change yet: {}".format(update))
 
     return
 
