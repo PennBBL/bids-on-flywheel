@@ -65,27 +65,34 @@ def main():
     df_original = read_flywheel_csv(args.original)
 
     # add groupings
-    group_id = df_original.duplicated(groups)
-    group_id = ~group_id
-    group_id2 = group_id.cumsum()
-    df_original['group_id'] = group_id2
+    # add a group index
+    df_original['group_id'] = float('nan')
+    # group the file and store separate groups
+    grouped_df = df_original.groupby(groups).groups
 
+    # loop over groups and assign the index
+    id = 1
+    for name, df in grouped_df.items():
+
+        index = df.to_list()
+        df_original.loc[index, 'group_id'] = id
+        id += 1
     # index the differences
-    diff = get_unequal_cells(df_grouped_modified, df_grouped, provenance=True)
+    diff = get_unequal_cells(df_grouped, df_grouped_modified, provenance=True)
 
-    changes = {}
+    changes = []
 
     for x in diff:
 
         key = df_grouped_modified.loc[x[0], 'group_id']
         val = (df_grouped_modified.columns[x[1]], df_grouped_modified.iloc[x[0], x[1]])
-        changes.update({key: val})
+        changes.append((key, val))
 
     # loop through the differences and map them to the full dataset
     print("Applying the changes to the full dataset...")
 
-    for group, change in changes.items():
-        df_original.loc[df_original['group_id'] == group, change[0]] = change[1]
+    for change in changes:
+        df_original.loc[df_original['group_id'] == change[0], change[1][0]] = change[1][1]
 
     df_original.drop(columns='group_id', inplace=True)
     df_original = df_original.sort_values(by=["acquisition.id", "acquisition.label"])
