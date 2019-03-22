@@ -3,7 +3,11 @@ import os
 import pandas as pd
 import numpy as np
 import re
+<<<<<<< HEAD
 import flywheel
+=======
+import flywheel as fw
+>>>>>>> 70fefb60020c0297b08177eb84ccaf578d3a3bf5
 import numbers
 import datetime
 import argparse
@@ -221,7 +225,7 @@ def upload_to_flywheel(modified_df, change_index, client):
         if is_nan(value):
             value = ''
         update = create_nested_fw_dict(column_list, value)
-
+        
         f = [f for f in fw_object.files if f.type == file_type][0]
         if 'info' in update.keys():
             f.update_info(update['info'])
@@ -242,7 +246,7 @@ def create_nested_fw_dict(tree_list, value):
 
 def main():
 
-    fw = flywheel.Client()
+    fw = fw.Client()
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
