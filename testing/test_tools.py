@@ -113,7 +113,7 @@ def tidy_classifications(get_mr_get_bids, process_acquisitions):
 def test_tidy_classifications(tidy_classifications):
 
     assert tidy_classifications is not None
-    assert tidy_classifications.shape == (55, 30)
+    assert tidy_classifications.shape == (119, 30)
     assert os.path.isfile("../data/Testing/test_query.csv")
 
 
@@ -135,35 +135,40 @@ def read_in1():
 def test_read_in1(read_in1):
 
     assert read_in1 is not None
-    assert read_in1.shape[0] == 55
+    assert read_in1.shape[0] == 119
 
 '''
 2. group and write out
 '''
 @pytest.fixture()
-def group_df(read_in1, groups=['info_SeriesDescription', 'type']):
+def group_df(read_in1, groups=['info_SeriesDescription']):
 
-    read_in1['group_id'] = (read_in1
-        # groupby and keep the columns as columns
-        .groupby(groups, as_index=False)
-        # index the groups
-        .ngroup()
-        .add(1))
-    read_in1 = (read_in1
-        # groupby and sample 1 exemplar
-        .groupby(groups, as_index=False)
-        .nth(1)
-        .reset_index(drop=True))
-    # add index for group indeces
+    read_in1['group_id'] = float('nan')
+    grouped_df = read_in1.groupby(groups).groups
+
+    id = 1
+    for name, df in grouped_df.items():
+
+        index = df.to_list()
+        read_in1.loc[index, 'group_id'] = id
+        id += 1
+
+    read_in1 = read_in1.drop_duplicates(groups)
     read_in1['groups'] = utils.unlist_item(groups)
     read_in1 = read_in1.sort_values(by=["acquisition.id", "acquisition.label", "type"])
     read_in1.to_csv("../data/Testing/test_query_grouped.csv", index=False)
+
+    dataset = utils.read_flywheel_csv('../data/Testing/test_query_grouped.csv')
+    dataset.loc[dataset['acquisition.label'].str.contains('b0map|B0map'), 'classification_Intent'] = "Fieldmap"
+    dataset.loc[dataset['acquisition.label'].str.contains('effort'),'info_BIDS_Task'] = "Effort"
+    dataset.to_csv("../data/Testing/test_query_grouped_modified.csv", index=False)
+
     return read_in1
 
 def test_group_df(group_df):
 
     assert group_df is not None
-    assert group_df.shape[0] == 15
+    assert group_df.shape[0] == 22
     assert os.path.isfile("../data/Testing/test_query_grouped.csv")
 
 '''
@@ -171,7 +176,6 @@ def test_group_df(group_df):
 Step 3. Manipulate
 =========================================================
 '''
-
 '''
 =========================================================
 Step 4. ungroup-query
@@ -192,8 +196,8 @@ def test_read_in2(read_in2):
 
     assert read_in2[0] is not None
     assert read_in2[1] is not None
-    assert read_in2[0].shape[0] == 15
-    assert read_in2[1].shape[0] == 15
+    assert read_in2[0].shape[0] == 22
+    assert read_in2[1].shape[0] == 22
 
 
 '''
@@ -211,26 +215,30 @@ def ungroup(read_in1, read_in2):
     # original df
     df_original = read_in1
     # add groupings
-    df_original['group_id'] = (df_original
-        # groupby and keep the columns as columns
-        .groupby(groups, as_index=False)
-        # index the groups
-        .ngroup()
-        .add(1))
+    df_original['group_id'] = float('nan')
+    # group the file and store separate groups
+    grouped_df = df_original.groupby(groups).groups
 
+    # loop over groups and assign the index
+    id = 1
+    for name, df in grouped_df.items():
+
+        index = df.to_list()
+        df_original.loc[index, 'group_id'] = id
+        id += 1
     # index the differences
-    diff = upload_bids.get_unequal_cells(df_grouped_modified, df_grouped, provenance=True)
+    diff = utils.get_unequal_cells(df_grouped, df_grouped_modified, provenance=True)
 
-    changes = {}
+    changes = []
 
     for x in diff:
 
         key = df_grouped_modified.loc[x[0], 'group_id']
         val = (df_grouped_modified.columns[x[1]], df_grouped_modified.iloc[x[0], x[1]])
-        changes.update({key: val})
+        changes.append((key, val))
 
-    for group, change in changes.items():
-        df_original.loc[df_original['group_id'] == group, change[0]] = change[1]
+    for change in changes:
+        df_original.loc[df_original['group_id'] == change[0], change[1][0]] = change[1][1]
 
     df_original.drop(columns='group_id', inplace=True)
     df_original = df_original.sort_values(by=["acquisition.id", "acquisition.label", "type"])
@@ -240,9 +248,8 @@ def ungroup(read_in1, read_in2):
 def test_ungroup(ungroup):
 
     assert ungroup is not None
-    assert ungroup.shape[0] == 55
+    assert ungroup.shape[0] == 119
     assert os.path.isfile("../data/Testing/testing_final.csv")
-
 
 '''
 =========================================================
@@ -256,8 +263,8 @@ Step 5. upload
 @pytest.fixture()
 def read_in3():
 
-    original = upload_bids.read_flywheel_csv("../data/Testing/test_query.csv")
-    modified = upload_bids.read_flywheel_csv("../data/Testing/testing_final.csv")
+    original = upload_bids.read_flywheel_csv("../data/Testing/test_query.csv", drop_downs=['classification_Measurement', 'classification_Intent'])
+    modified = upload_bids.read_flywheel_csv("../data/Testing/testing_final.csv", drop_downs=['classification_Measurement', 'classification_Intent'])
     return original, modified
 
 
@@ -305,61 +312,60 @@ def test_upload(upload):
     assert upload is None
 
 '''
-=========================================================
-Step 6. Reset
-=========================================================
-'''
-
+# =========================================================
+# Step 6. Reset
+# =========================================================
+# '''
 '''
 1. Read in
 '''
-# @pytest.fixture()
-# def reset_read_in3():
-#
-#     modified = upload_bids.read_flywheel_csv("../data/Testing/test_query.csv")
-#     original = upload_bids.read_flywheel_csv("../data/Testing/testing_final.csv")
-#     return original, modified
-#
-#
-# def test_reset_read_in3(reset_read_in3):
-#
-#     assert reset_read_in3[0] is not None
-#     assert reset_read_in3[1] is not None
-#     assert reset_read_in3[0].shape == reset_read_in3[1].shape
-#
-# '''
-# 2. Validate
-# '''
-# @pytest.fixture()
-# def reset_validate(reset_read_in3):
-#
-#     # original df
-#     df_original = reset_read_in3[0]
-#     # edited df
-#     df_modified = reset_read_in3[1]
-#
-#     # check for equality of each cell between the original and modified
-#     unequal = upload_bids.get_unequal_cells(df_original, df_modified, provenance=True)
-#     # if any unequal, assess the validity of the modification
-#     res = upload_bids.validate_on_unequal_cells(unequal, df_modified)
-#
-#     return upload_bids.ERROR_MESSAGES, res, df_modified, unequal
-#
-# def test_reset_validate(reset_validate):
-#
-#     assert len(reset_validate[0]) == 0
-#     assert reset_validate[1]
-#
-# '''
-# 3. Upload
-# '''
-# @pytest.fixture()
-# def reset_upload(reset_validate, fw):
-#
-#     upload_bids.upload_to_flywheel(reset_validate[2], reset_validate[3], fw)
-#
-#     return None
-#
-# def test_reset_upload(reset_upload):
-#
-#     assert reset_upload is None
+@pytest.fixture()
+def read_in4():
+
+    modified = upload_bids.read_flywheel_csv("../data/Testing/test_query.csv", drop_downs=['classification_Measurement', 'classification_Intent'])
+    original = upload_bids.read_flywheel_csv("../data/Testing/testing_final.csv", drop_downs=['classification_Measurement', 'classification_Intent'])
+    return original, modified
+
+
+def test_read_in4(read_in4):
+
+    assert read_in4[0] is not None
+    assert read_in4[1] is not None
+    assert read_in4[0].shape == read_in4[1].shape
+
+'''
+2. Validate
+'''
+@pytest.fixture()
+def validate2(read_in4):
+
+    # original df
+    df_original = read_in4[0]
+    # edited df
+    df_modified = read_in4[1]
+
+    # check for equality of each cell between the original and modified
+    unequal = upload_bids.get_unequal_cells(df_original, df_modified, provenance=True)
+    # if any unequal, assess the validity of the modification
+    res = upload_bids.validate_on_unequal_cells(unequal, df_modified)
+
+    return upload_bids.ERROR_MESSAGES, res, df_modified, unequal
+
+def test_validate2(validate2):
+
+    assert len(validate2[0]) == 0
+    assert validate2[1]
+
+'''
+3. Upload
+'''
+@pytest.fixture()
+def upload2(validate2, fw):
+
+    upload_bids.upload_to_flywheel(validate2[2], validate2[3], fw)
+
+    return None
+
+def test_upload2(upload2):
+
+    assert upload2 is None

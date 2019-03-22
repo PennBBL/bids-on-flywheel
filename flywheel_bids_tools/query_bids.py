@@ -255,9 +255,6 @@ def main():
         warnings.simplefilter("ignore")
         query_result = query_bids_validity(project, fw)
         query_result = query_result.sort_values(by=["acquisition.id", "acquisition.label"])
-        infer_type = lambda x: pd.api.types.infer_dtype(x, skipna=True)
-        #list_cols = query_result.apply(infer_type, axis=0) == 'mixed'
-        #query_result.loc[:, list_cols] = query_result.loc[:, list_cols].applymap(utils.unlist_item)
         drop_downs = ['classification_Measurement', 'classification_Intent',
             'classification_Features']
         query_result.loc[:, drop_downs] = query_result.loc[:, drop_downs].applymap(unlist_item)

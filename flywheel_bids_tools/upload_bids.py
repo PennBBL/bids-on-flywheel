@@ -12,9 +12,10 @@ from tqdm import tqdm
 
 
 ERROR_MESSAGES = []
+FAILS = []
 
 
-def read_flywheel_csv(fpath, required_cols=['acquisition.id']):
+def read_flywheel_csv(fpath, required_cols=['acquisition.id'], drop_downs=['classification_Measurement', 'classification_Intent', 'classification_Features']):
     '''
     Read in a CSV and also ensure it's one of ours
 
@@ -32,7 +33,6 @@ def read_flywheel_csv(fpath, required_cols=['acquisition.id']):
         " for this flywheel editing process!"))
 
     df = df.sort_values(by=["acquisition.id", "acquisition.label"])
-    drop_downs = ['classification_Measurement', 'classification_Intent', 'classification_Features']
     df.loc[:, drop_downs] = df.loc[:, drop_downs].applymap(relist_item)
     return(df)
 
@@ -81,7 +81,7 @@ def change_checker(user_input, column):
         'info_bids_error_message', 'info_sequencename',
         'info_bids_filename', 'type', 'info_bids_folder', 'info_bids_modality',
         'info_bids_path', 'info_bids_template', 'info_seriesdescription',
-        'classification_custom']
+        'classification_custom', 'info_bids_task']
 
     numeric_fields = ['info_echotime', 'info_repetitiontime']
 
@@ -204,7 +204,7 @@ def upload_to_flywheel(modified_df, change_index, client):
     '''
     If the changes are valid, upload them to flywheel
     '''
-
+    global FAILS
     # loop through each of the row_col indexes of changes
     for pair in tqdm(change_index, total=len(change_index)):
 
@@ -223,13 +223,21 @@ def upload_to_flywheel(modified_df, change_index, client):
         update = create_nested_fw_dict(column_list, value)
 
         f = [f for f in fw_object.files if f.type == file_type][0]
-        if 'info' in update.keys():
-            f.update_info(update['info'])
-        elif 'classification' in update.keys():
-            f.replace_classification(update['classification'])
-        else:
-            print("We haven't added functionality for this type of change yet: {}".format(update))
+        try:
+            if 'info' in update.keys():
+                f.replace_info(update['info'])
+            elif 'classification' in update.keys():
+                f.replace_classification(update['classification'])
+            else:
+                print("We haven't added functionality for this type of change yet: {}".format(update))
+        except Exception as e:
+            print("Looks like we couldn't make this change: {}".format(update))
+            print(e)
+            FAILS.append(modified_df.loc[pair[0],])
 
+    if len(FAILS) > 0:
+        fails_df = pd.concat(FAILS, sort=False)
+        fails_df.to_csv("./failed_to_upload.csv", index=False)
     return
 
 
