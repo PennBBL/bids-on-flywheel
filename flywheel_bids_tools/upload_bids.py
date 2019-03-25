@@ -205,40 +205,44 @@ def upload_to_flywheel(modified_df, change_index, client):
     If the changes are valid, upload them to flywheel
     '''
     global FAILS
-    # loop through each of the row_col indexes of changes
-    for pair in tqdm(change_index, total=len(change_index)):
+    # loop through each of the modified rows
+    for index, row in tqdm(modified_df.iterrows(), total=modified_df.shape[0]):
 
-        # get the acquisition id
-        acquisition = modified_df.loc[pair[0], 'acquisition.id']
-        file_type = modified_df.loc[pair[0], 'type']
-
+        # get the acquisition
+        acquisition = row['acquisition.id']
+        file_type = row['type']
+        modality = row['modality']
         # get the flywheel object of the acquisition
-        fw_object = client.get(str(acquisition))
-
-        # create the update dictionary
-        column_list = modified_df.columns[pair[1]].split("_")
-        value = modified_df.iloc[pair[0], pair[1]]
-        if is_nan(value):
-            value = ['']
-        update = create_nested_fw_dict(column_list, value)
-
-        f = [f for f in fw_object.files if f.type == file_type][0]
         try:
-            if 'info' in update.keys():
-                f.update_info(update['info'])
-            elif 'classification' in update.keys():
-                current_class = f.classification
-                current_class.update(update['classification'])
-                fw_object.replace_file_classification(f.name, current_class)
-            else:
-                print("We haven't added functionality for this type of change yet: {}".format(update))
+            fw_object = client.get(str(acquisition))
+            f = [f for f in fw_object.files if f.type == file_type][0]
         except Exception as e:
-            if current_class:
-                print("Looks like we couldn't make this classification change: {}".format(current_class))
-            else:
-                print("Looks like we couldn't make this change: {}".format(update))
+            print("Error fetching files for acquisition!")
             print(e)
-            FAILS.append(modified_df.loc[pair[0], ])
+            FAILS.append(row)
+            continue
+
+        # create MR classifier dict
+        classification_vals = row.filter(regex=r"classification")
+        keys = [re.sub("classification_", "", x) for x in classification_vals.index.to_list()]
+        values = [None if is_nan(x) else x for x in list(classification_vals.values)]
+        classification = dict(zip(keys,values))
+        new_class = {k: v for k, v in classification.items() if v is not None}
+        class2 = f.classification
+        class2.update(new_class)
+
+        try:
+            fw_object.replace_file_classification(
+                f.name,
+                class2,
+                modality)
+        except Exception as e:
+            print("Couldn't make this classification change: {}".format(class2))
+            print(e)
+            FAILS.append(row)
+
+        # to do:
+        # update BIDS info
 
     if len(FAILS) > 0:
         fails_df = pd.concat(FAILS, sort=False)
@@ -285,7 +289,8 @@ def main():
 
     if len(ERROR_MESSAGES) is 0 and res is True:
         print("Changes appear to be valid! Uploading...")
-        upload_to_flywheel(df_modified, unequal, fw)
+        diff = df_modified.fillna(9999) != df_original.fillna(9999)
+        upload_to_flywheel(df_modified.loc[diff.any(axis=1),], unequal, fw)
         print("Done!")
         sys.exit(0)
     else:
