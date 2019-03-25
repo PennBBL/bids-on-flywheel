@@ -219,21 +219,26 @@ def upload_to_flywheel(modified_df, change_index, client):
         column_list = modified_df.columns[pair[1]].split("_")
         value = modified_df.iloc[pair[0], pair[1]]
         if is_nan(value):
-            value = ''
+            value = ['']
         update = create_nested_fw_dict(column_list, value)
 
         f = [f for f in fw_object.files if f.type == file_type][0]
         try:
             if 'info' in update.keys():
-                f.replace_info(update['info'])
+                f.update_info(update['info'])
             elif 'classification' in update.keys():
-                f.replace_classification(update['classification'])
+                current_class = f.classification
+                current_class.update(update['classification'])
+                fw_object.replace_file_classification(f.name, current_class)
             else:
                 print("We haven't added functionality for this type of change yet: {}".format(update))
         except Exception as e:
-            print("Looks like we couldn't make this change: {}".format(update))
+            if current_class:
+                print("Looks like we couldn't make this classification change: {}".format(current_class))
+            else:
+                print("Looks like we couldn't make this change: {}".format(update))
             print(e)
-            FAILS.append(modified_df.loc[pair[0],])
+            FAILS.append(modified_df.loc[pair[0], ])
 
     if len(FAILS) > 0:
         fails_df = pd.concat(FAILS, sort=False)
