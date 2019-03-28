@@ -59,7 +59,7 @@ def change_checker(user_input, column):
         'info_bids_error_message', 'info_sequencename',
         'info_bids_filename', 'type', 'info_bids_folder', 'info_bids_modality',
         'info_bids_path', 'info_bids_template', 'info_seriesdescription',
-        'classification_custom', 'info_bids_task']
+        'classification_custom', 'info_bids_task', 'info_bids_acq']
 
     numeric_fields = ['info_echotime', 'info_repetitiontime']
 
