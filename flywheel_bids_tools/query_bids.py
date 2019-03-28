@@ -109,16 +109,21 @@ def process_acquisition(acq_id, client):
     Extract an acquisition
 
     This function extracts an acquisition object and collects the important
-    file classification information. These data are processed and returned as
+    classification/BIDS information. These data are processed and returned as
     a pandas dataframe that can then be manipulated
 
     '''
 
     # get the acquisition object
-    acq = client.get(acq_id)
-    if acq is None:
+    try:
+        acq = client.get(acq_id)
+        if acq is None:
+            raise Exception
+    except Exception as e:
+        print(e)
         global UNCLASSIFIED
         UNCLASSIFIED += 1
+        return pd.DataFrame({'acquisition.id': acq_id}, index = [0])
     # convert to dictionary, and flatten the dictionary to avoid nested dicts
     files = [x.to_dict() for x in acq.files]
     flat_files = [nested_to_record(my_dict, sep='_') for my_dict in files]
