@@ -30,7 +30,8 @@ def change_checker(user_input, column):
 
     drop_down_bool = {
         'ignore': ['true', 'false'],
-        'valid': ['true', 'false']
+        'valid': ['true', 'false'],
+        'info_bids_ignore': ['true', 'false']
         }
 
     drop_down_single_fields = {
@@ -59,7 +60,8 @@ def change_checker(user_input, column):
         'info_bids_error_message', 'info_sequencename',
         'info_bids_filename', 'type', 'info_bids_folder', 'info_bids_modality',
         'info_bids_path', 'info_bids_template', 'info_seriesdescription',
-        'classification_custom', 'info_bids_task', 'info_bids_acq']
+        'classification_custom', 'info_bids_task', 'info_bids_acq'
+        ]
 
     numeric_fields = ['info_echotime', 'info_repetitiontime']
 
@@ -189,11 +191,12 @@ def upload_to_flywheel(modified_df, change_index, client):
         # get the acquisition
         acquisition = row['acquisition.id']
         file_type = row['type']
+        file_name = row['name']
         modality = row['modality']
         # get the flywheel object of the acquisition
         try:
             fw_object = client.get(str(acquisition))
-            f = [f for f in fw_object.files if f.type == file_type][0]
+            f = [f for f in fw_object.files if f.name == file_name][0]
         except Exception as e:
             print("Error fetching files for acquisition!")
             print(e)

@@ -129,7 +129,7 @@ def process_acquisition(acq_id, client):
     flat_files = [nested_to_record(my_dict, sep='_') for my_dict in files]
 
     # define desirable columns in regex
-    cols = r'(classification)|(^type$)|(^modality$)|(BIDS)|(EchoTime)|(RepetitionTime)|(SequenceName)|(SeriesDescription)'
+    cols = r'(classification)|(^type$)|(^modality$)|(BIDS)|(EchoTime)|(RepetitionTime)|(PhaseEncodingDirection)|(SequenceName)|(SeriesDescription)|(name)'
 
     # filter the dict keys for the columns names
     flat_files = [
