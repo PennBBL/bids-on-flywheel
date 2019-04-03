@@ -104,7 +104,7 @@ def extract_bids_data(acquisitionID, client):
         return(df)
 
 
-def process_acquisition(acq_id, client):
+def process_acquisition(acq_id, client, target_cols=None):
     '''
     Extract an acquisition
 
@@ -129,13 +129,19 @@ def process_acquisition(acq_id, client):
     flat_files = [nested_to_record(my_dict, sep='_') for my_dict in files]
 
     # define desirable columns in regex
-    cols = r'(classification)|(^type$)|(^modality$)|(BIDS)|(EchoTime)|(RepetitionTime)|(PhaseEncodingDirection)|(SequenceName)|(SeriesDescription)|(name)'
+    if not target_cols:
+        cols = r'(classification)|(^type$)|(^modality$)|(BIDS)|(EchoTime)|(RepetitionTime)|(PhaseEncodingDirection)|(SequenceName)|(SeriesDescription)|(name)'
 
-    # filter the dict keys for the columns names
-    flat_files = [
-        {k: v for k, v in my_dict.items() if re.search(cols, k)}
-        for my_dict in flat_files
-        ]
+        # filter the dict keys for the columns names
+        flat_files = [
+            {k: v for k, v in my_dict.items() if re.search(cols, k)}
+            for my_dict in flat_files
+            ]
+    else:
+        flat_files = [
+            {k: v for k, v in my_dict.items() if k in target_cols}
+            for my_dict in flat_files
+            ]
 
     # add acquisition ID for reference
     for x in flat_files:

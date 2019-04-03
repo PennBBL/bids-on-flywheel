@@ -60,7 +60,8 @@ def change_checker(user_input, column):
         'info_bids_error_message', 'info_sequencename',
         'info_bids_filename', 'type', 'info_bids_folder', 'info_bids_modality',
         'info_bids_path', 'info_bids_template', 'info_seriesdescription',
-        'classification_custom', 'info_bids_task', 'info_bids_acq'
+        'classification_custom', 'info_bids_task', 'info_bids_acq',
+        'info_bids_intendedfor'
         ]
 
     numeric_fields = ['info_echotime', 'info_repetitiontime']
@@ -221,7 +222,7 @@ def upload_to_flywheel(modified_df, change_index, client):
                 )
 
             except Exception as e:
-                print("Couldn't make this classification change: {}".format(current_class))
+                print("Couldn't make this classification change: Subj{}-Sess{}".format(row['subject.label'], row['session.label']))
                 print(e)
                 FAILS.append(row)
 
@@ -239,11 +240,13 @@ def upload_to_flywheel(modified_df, change_index, client):
                     f.name,
                     {'BIDS': bids}
                 )
-
             except Exception as e:
-                print("Couldn't make this classification change: {}".format(class2))
+                print("Couldn't make this BIDS change: Subj {}-Sess {}-File {}".format(row['subject.label'], row['session.label'], row['name']))
+                print(bids)
                 print(e)
                 FAILS.append(row)
+
+
     if len(FAILS) > 0:
         fails_df = pd.concat(FAILS, sort=False)
         fails_df.to_csv("./failed_to_upload.csv", index=False)

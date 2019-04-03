@@ -5,7 +5,8 @@ import os
 
 
 def unlist_item(ls):
-    '''Convert a list item to a comma-separated string
+    '''
+    Convert a list item to a comma-separated string
     '''
     if isinstance(ls, list):
         ls.sort()
@@ -15,6 +16,9 @@ def unlist_item(ls):
 
 
 def relist_item(string):
+    '''
+    Convert a comma-separated string into a list
+    '''
     if type(string) is str:
         return([s.strip() for s in string.split(',')])
     else:
