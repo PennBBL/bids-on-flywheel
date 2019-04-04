@@ -2,35 +2,73 @@ import pandas as pd
 import flywheel
 import warnings
 import argparse
-
-from flywheel_bids_tools.bids_generator import BidsGenerator
+import ast
+import os
+from flywheel_bids_tools.query_bids import process_acquisition
+#from flywheel_bids_tools.bids_generator import BidsGenerator
 from flywheel_bids_tools.utils import read_flywheel_csv
 from tqdm import tqdm
 FAILS = []
 
 
+def build_intention_path(row):
+
+    path = "ses-{0}/{1}/{2}".format(
+        row['session.label'], row['info_BIDS_Folder'], row['info_BIDS_Filename'])
+    return path
+
 def update_intentions(df, client):
 
     global FAILS
-    df = df.dropna(subset=["info_BIDS_IntendedFor"])
+    df = df.dropna(subset=["info_BIDS_IntendedFor"]).reset_index()
 
+    counter = []
     for index, row in tqdm(df.iterrows(), total=df.shape[0]):
-        # create BIDSGenerator object to edit "intended for"
+
         try:
-            gen = BidsGenerator()
-            gen.parse_row(row)
-            gen.update_intention(client)
-            #if result is None:
-            #    raise AssertionError
+            acq = client.get(row['acquisition.id'])
+            session = client.get(acq['parents']['session'])
+            acqs_df = []
+            for acquisition in session.acquisitions():
+                temp = process_acquisition(acquisition.id, client, target_cols=['info_SeriesDescription','info_ShimSetting', 'info_BIDS_Folder', 'info_BIDS_Filename', 'type'])
+                temp['session.label'] = row['session.label']
+                temp['subject.label'] = row['subject.label']
+                acqs_df.append(temp)
+
+            acqs_df = pd.concat(acqs_df, ignore_index=True, sort=False)
+            acqs_df = acqs_df.loc[acqs_df.type.str.contains("nifti"),]
+            current_shim = tuple(acqs_df.loc[(acqs_df['info_SeriesDescription'] == row['info_SeriesDescription']) & (acqs_df['acquisition.id'] == row['acquisition.id'])].info_ShimSetting.values[0])
+
+            assert len(current_shim) > 0, "No shim settings for this file"
+
+            acqs_df = acqs_df.loc[~(acqs_df['acquisition.id'] == row['acquisition.id'])]
+            acqs_df = acqs_df.dropna(subset=['info_ShimSetting'])
+            acqs_df['info_ShimSetting'] = acqs_df['info_ShimSetting'].map(tuple)
+            final_files = acqs_df.loc[(acqs_df['info_ShimSetting'] == current_shim)]
+            final_files = final_files.dropna()
+            intent = [x['Folder'] for x in ast.literal_eval(row['info_BIDS_IntendedFor'])]
+            final_files = final_files.loc[final_files['info_BIDS_Folder'].isin(intent), ]
+            assert len(final_files) > 0, "No matching files for this shim setting"
+
+            result = final_files.apply(build_intention_path, axis=1)
+            #print("{}: This file has {} matching files".format(row['info_BIDS_Filename'], len(result)))
+            acq.update_file_info(row['name'], {'IntendedFor': list(result.values)})
+            counter.append(pd.DataFrame({'files': result, 'origin': row['info_BIDS_Filename']}))
         except Exception as e:
             print("Unable to update intentions for this file:")
-            print(row['name'], row['session.label'])
+            print(row['name'], row['session.label'], row['info_BIDS_Filename'])
             print(e)
             FAILS.append(row)
 
+    cwd = os.getcwd()
+
+    counter = pd.concat(counter, ignore_index=True, sort=False)
+    counter.to_csv("{}/successful_intention_updates.csv".format(cwd), index=False)
+
     if len(FAILS) > 0:
-        fails_df = pd.concat(FAILS, sort=False)
-        fails_df.to_csv("./failed_to_update_intentions.csv", index=False)
+        fails_dict = [x.to_dict() for x in FAILS]
+        fails_df = pd.DataFrame(fails_dict)
+        fails_df.to_csv("{}/failed_to_update_intentions.csv".format(cwd), index=False)
 
 
 def main():
