@@ -14,24 +14,26 @@ NO_DATA = 0
 VERBOSE = True
 
 
-def query_fw(project, client):
+def query_fw(client, project, subject=None, session=None):
     """Query the flywheel client for a project name
-
     This function uses the flywheel API to find the first match of a project
     name. The name must be exact so make sure to type it as is on the
     website/GUI.
-
     Parameters
     ---------
-    project
-        The name of the project to search for.
     client
         The flywheel Client class object.
+    project
+        The name of the project to search for.
+    subject
+        Subject ID
+    session
+        Session ID
 
     Returns
     ---------
-    project_object
-        A flywheel project container object.
+    seq_infos
+        A list of SeqInfo objects
     """
     project_object = client.projects.find_first('label={0}'.format(project))
 
@@ -40,7 +42,18 @@ def query_fw(project, client):
         for p in client.projects():
             print('%s' % (p.label))
         raise ValueError("Could not find \"{0}\" project on Flywheel!".format(project))
-    return(project_object)
+
+    if subject is not None:
+        subject = project_object.subjects.find_one('code="{}"'.format(subject))
+        sessions = subject.sessions()
+    elif session is not None:
+        sessions = project_object.sessions.find('label="{}"'.format(session))
+    else:
+        sessions = project_object.sessions()
+
+    acquisitions = [acq for s in sessions for acq in s.acquisitions()]
+
+    return(acquisitions)
 
 
 def extract_bids_data(acquisitionID, client):
@@ -103,6 +116,29 @@ def extract_bids_data(acquisitionID, client):
 
         return(df)
 
+
+def process_query(client, acquisitions, target_cols=None):
+
+    acquisitions_list = []
+    for x in acquisitions:
+        tempacq = client.get(x.id)
+        files = tempacq.files
+        files = [f.to_dict() for f in files]
+        for f in files:
+            f.update({'acquisition.id': x.id})
+        acquisitions_list.extend(files)
+
+    files_list = [nested_to_record(fdict, sep="_") for fdict in acquisitions_list]
+
+    # filter columns if necessary
+    if not target_cols:
+        return_df = pd.DataFrame(files_list)
+    else:
+        files_list = [
+            {k: v for k, v in my_dict.items() if k in target_cols}
+            for my_dict in files_list
+            ]
+        return_df = pd.DataFrame(files_list)
 
 def process_acquisition(acq_id, client, target_cols=None):
     '''
@@ -226,7 +262,7 @@ def query_bids_validity(project, client, VERBOSE=True):
     merged_data = merged_data.drop(columns=['acquisition.timestamp', 'acquisition.timezone', 'project.id', 'session.id', 'subject.id'])
     if VERBOSE:
         print("{} acquisitions could not be processed.".format(UNCLASSIFIED))
-        print("{} acquisitions do not have BIDS information yet.".format(NO_DATA))
+        #print("{} acquisitions do not have BIDS information yet.".format(NO_DATA))
     return(merged_data)
 
 
@@ -264,7 +300,7 @@ def main():
     project = ' '.join(args.project)
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        query_result = query_bids_validity(project, fw)
+        query_result = query_fw(fw, project)
         query_result = query_result.sort_values(by=["acquisition.id", "acquisition.label"])
         drop_downs = ['classification_Measurement', 'classification_Intent',
             'classification_Features']

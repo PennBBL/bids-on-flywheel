@@ -37,11 +37,13 @@ def read_flywheel_csv(fpath, required_cols=['acquisition.id']):
     '''
 
     df = pd.read_csv(fpath)
+    for col in ['session.label', 'subject.label']:
+        df[col] = df[col].astype(str)
 
     if not all(elem in df.columns.tolist() for elem in required_cols):
         raise Exception(("It doesn't look like this csv is correctly formatted",
         " for this flywheel editing process!"))
-    df = df.sort_values(by=["acquisition.id", "acquisition.label"])
+    df = df.sort_values(by=["acquisition.id", "acquisition.label"]).reset_index(drop=True)
     return(df)
 
 

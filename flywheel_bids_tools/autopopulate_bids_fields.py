@@ -42,12 +42,12 @@ def update_intentions(df, client):
             assert len(current_shim) > 0, "No shim settings for this file"
 
             acqs_df = acqs_df.loc[~(acqs_df['acquisition.id'] == row['acquisition.id'])]
-            acqs_df = acqs_df.dropna(subset=['info_ShimSetting'])
-            acqs_df['info_ShimSetting'] = acqs_df['info_ShimSetting'].map(tuple)
-            final_files = acqs_df.loc[(acqs_df['info_ShimSetting'] == current_shim)]
-            final_files = final_files.dropna()
+            #acqs_df = acqs_df.dropna(subset=['info_ShimSetting'])
+            #acqs_df['info_ShimSetting'] = acqs_df['info_ShimSetting'].map(tuple)
+            #final_files = acqs_df.loc[(acqs_df['info_ShimSetting'] == current_shim)]
+            #final_files = final_files.dropna()
             intent = [x['Folder'] for x in ast.literal_eval(row['info_BIDS_IntendedFor'])]
-            final_files = final_files.loc[final_files['info_BIDS_Folder'].isin(intent), ]
+            final_files = acqs_df.loc[acqs_df['info_BIDS_Folder'].isin(intent), ]
             assert len(final_files) > 0, "No matching files for this shim setting"
 
             result = final_files.apply(build_intention_path, axis=1)
@@ -70,6 +70,36 @@ def update_intentions(df, client):
         fails_df = pd.DataFrame(fails_dict)
         fails_df.to_csv("{}/failed_to_update_intentions.csv".format(cwd), index=False)
 
+def update_echo_times(df, client):
+
+    global FAILS
+    df = df.dropna(subset=["info_EchoTime1"]).reset_index()
+
+    counter = []
+    for index, row in tqdm(df.iterrows(), total=df.shape[0]):
+
+        try:
+            acq = client.get(row['acquisition.id'])
+            file_name = row['name']
+            f = [f for f in acq.files if f.name == file_name][0]
+            success = f.update_info({"EchoTime1": row["info_EchoTime1"], "EchoTime2": row["info_EchoTime2"]})
+            if success:
+                counter.append(row)
+        except Exception as e:
+            print("Unable to update echo times for this file:")
+            print(row['name'], row['session.label'], row['info_BIDS_Filename'])
+            print(e)
+            FAILS.append(row)
+
+    cwd = os.getcwd()
+
+    counter = pd.concat(counter, ignore_index=True, sort=False)
+    counter.to_csv("{}/successful_echotime_updates.csv".format(cwd), index=False)
+
+    if len(FAILS) > 0:
+        fails_dict = [x.to_dict() for x in FAILS]
+        fails_df = pd.DataFrame(fails_dict)
+        fails_df.to_csv("{}/failed_to_update_echotimes.csv".format(cwd), index=False)
 
 def main():
 
@@ -99,6 +129,7 @@ def main():
     intentions_df = read_flywheel_csv(args.df, required_cols=['acquisition.id', 'info_BIDS_IntendedFor'])
 
     update_intentions(intentions_df, fw)
+    update_echo_times(intentions_df, fw)
     print("Done!")
 
 
