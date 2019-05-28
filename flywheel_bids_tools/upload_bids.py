@@ -293,9 +293,8 @@ def main():
     if len(ERROR_MESSAGES) is 0 and res is True:
         print("Changes appear to be valid! Uploading...")
         diff = df_modified.fillna(9999) != df_original.fillna(9999)
-        drop_downs = ['classification_Measurement',
-            'classification_Intent', 'classification_Features']
-        df_modified.loc[:, drop_downs] = df_modified.loc[:, drop_downs].applymap(relist_item)
+        #drop_downs = ['classification_Measurement', 'classification_Intent', 'classification_Features']
+        #df_modified.loc[:, drop_downs] = df_modified.loc[:, drop_downs].applymap(relist_item)
         upload_to_flywheel(df_modified.loc[diff.any(axis=1),], unequal, fw)
         print("Done!")
         sys.exit(0)

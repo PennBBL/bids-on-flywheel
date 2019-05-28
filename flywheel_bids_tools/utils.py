@@ -101,3 +101,7 @@ def get_unequal_cells(df1, df2, provenance=True):
 
 def is_nan(x):
     return (x is np.nan or x != x)
+
+
+def is_list_column(col):
+    return("[" in col.to_string() and "{" not in col.to_string())
