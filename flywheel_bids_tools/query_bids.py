@@ -79,7 +79,7 @@ def process_query(client, acquisitions, target_cols=None):
     acquisitions
         A list of flywheel acquisition objects
     target_cols
-        Specific columns to return
+        List of specific columns to return
 
     Returns
     --------
@@ -94,15 +94,21 @@ def process_query(client, acquisitions, target_cols=None):
             if tempacq is None:
                 raise Exception
 
+            d = {
+                'acquisition.id': x.id,
+                'acquisition.label': x.label,
+                'session.id': x.session,
+                'session.label': client.get(x.parents.session).label,
+                'subject.id': x.parents.subject,
+                'subject.label': client.get(x.parents.subject).label,
+                'timestamp': x.timestamp
+            }
+
             files = tempacq.files
             files = [f.to_dict() for f in files]
             for f in files:
-                f.update({
-                    'acquisition.id': x.id,
-                    'acquisition.label': x.label,
-                    'session': x.session,
-                    'timestamp': x.timestamp
-                })
+
+                f.update(d)
 
         except Exception as e:
             print(e)
@@ -118,7 +124,7 @@ def process_query(client, acquisitions, target_cols=None):
         print("Tidying and returning the results...")
     # filter columns if necessary
     if not target_cols:
-        cols = r'(acquisition)|(session)|(label)|(classification)|(^type$)|(^modality$)|(BIDS)|(EchoTime)|(RepetitionTime)|(PhaseEncodingDirection)|(SequenceName)|(SeriesDescription)|(name)'
+        cols = r'(\.label)|(\.id)|(classification)|(^type$)|(^modality$)|(BIDS)|(EchoTime)|(RepetitionTime)|(PhaseEncodingDirection)|(SequenceName)|(SeriesDescription)|(name)'
 
         # filter the dict keys for the columns names
         files_list = [
@@ -127,8 +133,13 @@ def process_query(client, acquisitions, target_cols=None):
             ]
         return_df = pd.DataFrame(files_list)
     else:
+        required_cols = ['\.id', '\.label', 'name']
+
+        target_cols.extend(required_cols)
+        target_cols = "|".join(["({})".format(x) for x in target_cols])
+
         files_list = [
-            {k: v for k, v in my_dict.items() if k in target_cols}
+            {k: v for k, v in my_dict.items() if re.search(target_cols, k)}
             for my_dict in files_list
             ]
         return_df = pd.DataFrame(files_list)
@@ -162,6 +173,24 @@ def main():
         dest="output"
     )
     parser.add_argument(
+        "--subject",
+        help="The subject label(s)",
+        nargs="+",
+        default=None
+    )
+    parser.add_argument(
+        "--session",
+        help="The session label(s)",
+        nargs="+",
+        default=None
+    )
+    parser.add_argument(
+        "--target_cols",
+        help="List of specific columns to return",
+        nargs="+",
+        default=None
+    )
+    parser.add_argument(
         "-v", "--verbose",
         help="Print out progress messages and information",
         default=True
@@ -175,13 +204,15 @@ def main():
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         query_result = query_fw(fw, project)
-        query_result_files = process_query(fw, query_result)
+        query_result_files = process_query(fw, query_result, args.target_cols)
 
         if VERBOSE:
             global NO_DATA
             print("{} acquisitions could not be processed.".format(NO_DATA))
 
-        query_result_files.to_csv(args.output, index=False)
+        df = query_result_files.reindex(sorted(query_result_files.columns), axis=1)
+        df = df.sort_values(by=['acquisition.id', 'acquisition.label', 'name'], ascending=False).reset_index(drop=True)
+        df.to_csv(args.output, index=False)
     print("Done!")
 
 

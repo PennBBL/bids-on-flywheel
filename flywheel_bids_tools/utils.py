@@ -43,7 +43,8 @@ def read_flywheel_csv(fpath, required_cols=['acquisition.id']):
     if not all(elem in df.columns.tolist() for elem in required_cols):
         raise Exception(("It doesn't look like this csv is correctly formatted",
         " for this flywheel editing process!"))
-    df = df.sort_values(by=["acquisition.id", "acquisition.label"]).reset_index(drop=True)
+    df = df.reindex(sorted(df.columns), axis=1)
+    df = df.sort_values(by=['acquisition.id', 'acquisition.label', 'name'], ascending=False).reset_index(drop=True)
     return(df)
 
 

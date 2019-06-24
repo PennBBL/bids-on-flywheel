@@ -108,3 +108,16 @@ data
 *.csv
 .DS_Store
 .Rproj.user
+.Rhistory
+*.Rproj
+conf.py
+*.rst
+Makefile
+*.bat
+shiny*
+_*
+docs/
+*provenance*
+table_editor/
+images/
+testing/
