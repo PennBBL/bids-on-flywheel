@@ -25,7 +25,7 @@ def relist_item(string):
         return string
 
 
-def read_flywheel_csv(fpath, required_cols=['acquisition.id']):
+def read_flywheel_csv(fpath):
     '''
     Read in a CSV and also ensure it's one of ours
 
@@ -37,14 +37,17 @@ def read_flywheel_csv(fpath, required_cols=['acquisition.id']):
     '''
 
     df = pd.read_csv(fpath)
-    for col in ['session.label', 'subject.label']:
-        df[col] = df[col].astype(str)
+    required_cols=['acquisition.id', 'acquisition.label', 'name', 'session.id', 'subject.id', 'session.label', 'subject.label']
+    try:
+        for col in required_cols:
+            df[col] = df[col].astype(str)
+    except KeyError as e:
+        print("Column missing:{}".format(e))
+        SystemExit(0)
 
-    if not all(elem in df.columns.tolist() for elem in required_cols):
-        raise Exception(("It doesn't look like this csv is correctly formatted",
-        " for this flywheel editing process!"))
     df = df.reindex(sorted(df.columns), axis=1)
     df = df.sort_values(by=['acquisition.id', 'acquisition.label', 'name'], ascending=False).reset_index(drop=True)
+
     return(df)
 
 

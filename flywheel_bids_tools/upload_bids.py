@@ -7,8 +7,10 @@ import flywheel
 import numbers
 import datetime
 import argparse
+import numbers
 from flywheel_bids_tools.utils import relist_item, get_unequal_cells, is_nan, read_flywheel_csv
 from tqdm import tqdm
+from ast import literal_eval
 
 
 ERROR_MESSAGES = []
@@ -144,7 +146,8 @@ def change_checker(user_input, column):
         ERROR_MESSAGES.append("You cannot edit the acquisition ID!")
         return False
     else:
-        raise Exception("Column {0} not recognised!".format(column))
+        print("Warning: Column {0} not recognised!".format(column))
+        return True
 
 
 def validate_on_unequal_cells(indices_list, changed_df):
@@ -197,7 +200,7 @@ def upload_to_flywheel(modified_df, change_index, client):
         # get the flywheel object of the acquisition
         try:
             fw_object = client.get(str(acquisition))
-            f = [f for f in fw_object.files if f.name == file_name][0]
+            f = [f.to_dict() for f in fw_object.files if f.name == file_name][0]
         except Exception as e:
             print("Error fetching files for acquisition!")
             print(e)
@@ -207,16 +210,16 @@ def upload_to_flywheel(modified_df, change_index, client):
         # create MR classifier dict
         classification_vals = row.filter(regex=r"classification")
         keys = [re.sub("classification_", "", x) for x in classification_vals.index.to_list()]
-        values = [None if is_nan(x) else x for x in list(classification_vals.values)]
+        values = [None if is_nan(x) else literal_eval(x) for x in list(classification_vals.values)]
         classification = dict(zip(keys,values))
         new_class = {k: v for k, v in classification.items() if v is not None}
-        current_class = f.classification
+        current_class = f['classification']
         if new_class != current_class:
             current_class.update(new_class)
 
             try:
                 update_attempt_classifier = fw_object.replace_file_classification(
-                    f.name,
+                    f['name'],
                     current_class,
                     modality
                 )
@@ -237,11 +240,31 @@ def upload_to_flywheel(modified_df, change_index, client):
         if current_bids != bids:
             try:
                 update_attempt_bids = fw_object.update_file_info(
-                    f.name,
+                    f['name'],
                     {'BIDS': bids}
                 )
             except Exception as e:
                 print("Couldn't make this BIDS change: Subj {}-Sess {}-File {}".format(row['subject.label'], row['session.label'], row['name']))
+                print(bids)
+                print(e)
+                FAILS.append(row)
+
+        # create remaining info dict
+        cols = row.filter(regex=r"info_(?!BIDS)")
+        info = cols.to_dict()
+        info = {re.sub("info_", "", k): v for k, v in info.items()}
+        info = {k: (v if not is_nan(v) else '') for k, v in info.items()}
+        current_info = f['info']
+        del current_info['BIDS']
+
+        if current_info != info:
+            try:
+                update_attempt_bids = fw_object.update_file_info(
+                    f['name'],
+                    info
+                )
+            except Exception as e:
+                print("Couldn't make this info change: Subj_{}-Sess_{}-File_{}".format(row['subject.label'], row['session.label'], row['name']))
                 print(bids)
                 print(e)
                 FAILS.append(row)
@@ -293,8 +316,6 @@ def main():
     if len(ERROR_MESSAGES) is 0 and res is True:
         print("Changes appear to be valid! Uploading...")
         diff = df_modified.fillna(9999) != df_original.fillna(9999)
-        #drop_downs = ['classification_Measurement', 'classification_Intent', 'classification_Features']
-        #df_modified.loc[:, drop_downs] = df_modified.loc[:, drop_downs].applymap(relist_item)
         upload_to_flywheel(df_modified.loc[diff.any(axis=1),], unequal, fw)
         print("Done!")
         sys.exit(0)
